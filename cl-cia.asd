@@ -2,10 +2,13 @@
 
 (asdf:defsystem #:cl-cia
   :serial t
-  :description "Describe cl-cia here"
-  :author "Your Name <your.name@example.com>"
-  :license "Specify license here"
-  :depends-on (#:cl-irc)
+  :description "cl-cia is an IRC bot to report commits to a subversion repository"
+  :author "Erik Greenwald <erik@elfga.com>"
+  :license "LLGPL"
+  :depends-on (#:cl-irc
+	       :local-time
+	       :cl-ppcre
+	       )
   :components ((:file "package")
                (:file "cl-cia")))
 
