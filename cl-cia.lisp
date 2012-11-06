@@ -7,7 +7,7 @@
 ; mail form assumes the procmail matching rule puts it in $HOME/db/cia/mail/
 ; with the trailing slash inferring mailbox dir instead of mbox file.
 (defparameter +db-mail-dir+ (merge-pathnames "mail/" +db-dir+))
-(defparameter +db-unprocessed-mail-dir+ (merge-pathnames "unprocessed/" +db-mail-dir+))
+(defparameter +db-unprocessed-mail-dir+ (merge-pathnames "unprocessed/new/" +db-mail-dir+))
 
 (defvar *biglock* (bordeaux-threads:make-lock "cl-cia"))
 
