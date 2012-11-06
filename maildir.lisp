@@ -16,7 +16,8 @@
 		 (cl-ppcre:scan (concatenate 'string regex "[ \t]*(.*)") x))
 	       start)
 	     lines)
-    (subseq l (aref r1 0) (aref r2 0))))
+    (when (and r1 r2)
+      (subseq l (aref r1 0) (aref r2 0)))))
 
 (defun datify (datestr)
   "Attempt to convert a string to a local-time:timestamp object, using local-time:now if unable"
@@ -31,14 +32,15 @@
   (let* ((f (read-file-to-list mailfile))
 ;	 (subj (snarf "^Subject:" f))
 	 (date (datify (snarf "^Date:" f)))
-	 (revision (parse-integer (snarf "^Revision:" f) :junk-allowed t))
+	 (revision (snarf "^Revision:" f))
 	 (author (snarf "^Author:" f))
 	 (body '()))
-    (let ((start (+ (position-if (lambda (x) (cl-ppcre:scan "^Log Message:$" x)) f) 2))
-	  (end (position-if (lambda (x) (cl-ppcre:scan "^Modified Paths:$" x)) f)))
-      (when (and start end)
-	(setf body (format nil "~{~a ~}" (subseq f start end)))))
-    (make-instance 'commit :revision revision :timestamp date :user author :message body)))
+    (when (and revision author)
+      (let ((start (+ (position-if (lambda (x) (cl-ppcre:scan "^Log Message:$" x)) f) 2))
+	    (end (position-if (lambda (x) (cl-ppcre:scan "^Modified Paths:$" x)) f)))
+	(when (and start end)
+	  (setf body (format nil "~{~a ~}" (subseq f start end)))))
+      (make-instance 'commit :revision revision :timestamp date :user author :message body))))
 
 (defun process-mail-dir (&key (maildir +db-unprocessed-mail-dir+) (hooks '()))
   "Parse all messages in a mail dir, adding parsed commit messages to the list and applying the hooks"
