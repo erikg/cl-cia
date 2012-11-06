@@ -1,5 +1,6 @@
 ;;;; package.lisp
 
 (defpackage #:cl-cia
-  (:use #:cl))
+  (:use #:cl)
+  (:export :start :stop))
 
