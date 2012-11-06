@@ -5,7 +5,7 @@
 (defun read-file-to-list (file)
   (with-open-file (stream file)
     (loop for line = (read-line stream nil)
-	 while line collect line)))
+       while line collect line)))
 
 (defun snarf (regex lines)
   "Return contents of a : type line matching regex"
@@ -40,6 +40,7 @@
 	    (end (position-if (lambda (x) (cl-ppcre:scan "^Modified Paths:$" x)) f)))
 	(when (and start end)
 	  (setf body (format nil "~{~a ~}" (subseq f start end)))))
+      (setf revision (parse-integer revision :junk-allowed t))
       (make-instance 'commit :revision revision :timestamp date :user author :message body))))
 
 (defun process-mail-dir (&key (maildir +db-unprocessed-mail-dir+) (hooks '()))
