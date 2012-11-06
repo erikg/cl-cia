@@ -20,8 +20,14 @@
 (defun report-commit (message)
   (cl-irc:privmsg *connection* "#brlcad" (format-commit message)))
 
+
+(defun msg-hook (msg)
+  (declare (ignore msg))
+  '())
+
 (defun bot (&key (nick "brlbot") (server "irc.freenode.net") (channel "#brlcad"))
   (setf *connection* (cl-irc:connect :username nick :realname "BRL Bot" :server server :nickname nick))
+  (cl-irc:add-hook *connection* :privmsg 'msg-hook)
   (cl-irc:join *connection* channel)
   (setf *bot-thread* (bordeaux-threads:make-thread (lambda ()
 						     (cl-irc:read-message-loop *connection*))
