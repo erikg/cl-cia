@@ -14,5 +14,6 @@
 		 )
     :components ((:file "package")
 		 (:file "cl-cia")
-		 (:file "mailbox")))
+		 (:file "irc")
+		 (:file "maildir")))
 
