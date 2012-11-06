@@ -11,9 +11,12 @@
 		 :alexandria
 		 :bordeaux-threads
 		 :cl-ppcre
+		 :s-xml
+		 :cl-store
 		 )
     :components ((:file "package")
 		 (:file "cl-cia")
 		 (:file "irc")
+		 (:file "xmlrpc")
 		 (:file "maildir")))
 
