@@ -17,9 +17,11 @@
 	  (ascii-ize (format nil "~a * ~a" (user message) (revision message)) 3)
 	  (filestr (files message))
 	  (message message)))
-(defun report-commit (message)
-  (cl-irc:privmsg *connection* "#brlcad" (format-commit message)))
 
+(defun report-commit (project message)
+;  (declare (ignore project))
+  (format t "Reporting commit: ~a ~a~%" project message)
+  (cl-irc:privmsg *connection* "#brlcad" (format-commit message)))
 
 (defun msg-hook (msg)
   (declare (ignore msg))
@@ -34,5 +36,7 @@
 						   :name "brlbot")))
 
 (defun stop-bot ()
-  (cl-irc:quit *connection*)
-  (bordeaux-threads:join-thread *bot-thread*))
+  (cl-irc:quit *connection* "EVACUATE! EVACUATE!")
+;  (bordeaux-threads:join-thread *bot-thread*)
+  (setf *bot-thread* '())
+)

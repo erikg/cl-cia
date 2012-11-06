@@ -41,6 +41,7 @@
 (defun load-commit-from-mail-message (mailfile)
   (let* ((f (read-file-to-list mailfile))
 ;	 (subj (snarf "^Subject:" f))
+	 (list-id (snarf "^List-Id:" f))
 	 (date (datify (snarf "^Date:" f)))
 	 (revision (snarf "^Revision:" f))
 	 (author (snarf "^Author:" f))
@@ -52,18 +53,32 @@
 	(when (and start end)
 	  (setf body (format nil "~{~a ~}" (subseq f start end)))))
       (setf revision (parse-integer revision :junk-allowed t))
-      (make-instance 'commit :files files :revision revision :timestamp date :user author :message body))))
+      (values
+       (make-instance 'commit :files files :revision revision :timestamp date :user author :message body)
+       (subseq list-id 0 (position #\Space list-id))))))
 
 (defun process-mail-dir (&key (maildir +db-unprocessed-mail-dir+) (hooks '()))
   "Parse all messages in a mail dir, adding parsed commit messages to the list and applying the hooks"
   (bordeaux-threads:with-lock-held (*biglock*)
     (dolist (file (cl-fad:list-directory maildir))
-      (alexandria:when-let ((message (load-commit-from-mail-message file)))
-	(unless (message-seen message)
-	  (push message *messages*)
-	  (let ((res
-		 (if hooks
-		     (mapcar (lambda (x) (funcall x message)) hooks)
-		     '(t))))
-	    (unless (find nil res)
-	      (rename-file file (merge-pathnames +db-processed-mail-dir+ (file-namestring file))))))))))
+      (multiple-value-bind (message project-name) (load-commit-from-mail-message file)
+	(alexandria:when-let (project (find-project project-name))
+	  (when (add-message project message)
+	    (let ((res (if hooks (mapcar (lambda (x) (funcall x message)) hooks) '(t))))
+	      (unless (find nil res)
+		(rename-file file (merge-pathnames +db-processed-mail-dir+ (file-namestring file)))))))))))
+
+(defun pump ()  (process-mail-dir))
+(defvar *pump* '())
+(defvar *pump-running* '())
+(defun start-pump ()
+  (unless *pump*
+    (setf *pump-running* t)
+    (setf *pump* (bordeaux-threads:make-thread
+		  (lambda () (loop while *pump-running* do (progn (pump) (sleep 5))))
+		  :name "cl-cia pumper"))))
+(defun stop-pump ()
+  (when (and *pump* *pump-running*)
+    (setf *pump-running* '())
+    (bordeaux-threads:join-thread *pump*)
+    (setf *pump* '())))

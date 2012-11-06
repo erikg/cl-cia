@@ -3,6 +3,7 @@
 (in-package #:cl-cia)
 
 (defparameter +db-dir+ (merge-pathnames "db/cia/" (user-homedir-pathname)))
+(defparameter +db-state+ (merge-pathnames "cia.state" +db-dir+))
 
 ; mail form assumes the procmail matching rule puts it in $HOME/db/cia/mail/
 ; with the trailing slash inferring mailbox dir instead of mbox file.
@@ -12,6 +13,17 @@
 
 (defvar *biglock* (bordeaux-threads:make-lock "cl-cia"))
 
+(defclass project ()
+  ((name :accessor name :initarg :name)
+   (commits :accessor commits :initform '() :initarg :commits)
+   (hooks :accessor hooks :initform '() :initarg :hooks)))
+(defmethod print-object ((p project) stream)
+  (format stream "<Project ~a (~d commits)>" (name p) (length (commits p))))
+(defvar *projects* '())
+(defun add-project (project)
+  (push project *projects*))
+(defun find-project (name)
+  (find-if (lambda (x) (string-equal (name x) name)) *projects*))
 (defclass commit ()
   ((timestamp :accessor timestamp :initarg :timestamp :initform (local-time:now))
    (user :accessor user :initarg :user)
@@ -24,33 +36,25 @@
 (defmethod equals ((c1 commit) (c2 commit))
   (and (string-equal (user c1) (user c2)) (= (revision c1) (revision c2))))
 
-(defvar *messages* '())
-(defun message-seen (message &optional (messages *messages*))
-  (find message messages :test #'equals))
-
-(defun pump ()
-  (process-mail-dir :hooks
-		    (list
-		     #'report-commit)))
-
-(defvar *pump* '())
-(defvar *pump-running* '())
-(defun start-pump ()
-  (unless *pump*
-    (setf *pump-running* t)
-    (setf *pump* (bordeaux-threads:make-thread
-		  (lambda () (loop while *pump-running* do (progn (pump) (sleep 5))))
-		  :name "cl-cia pumper"))))
-(defun stop-pump ()
-  (when (and *pump* *pump-running*)
-    (setf *pump-running* '())
-    (bordeaux-threads:join-thread *pump*)
-    (setf *pump* '())))
+(defvar *message-hooks* '())
+(defun message-seen (project message)
+  (find message (commits project) :test #'equals))
+(defun add-message (project message)
+  (unless (message-seen project message)
+    (dolist (hook (hooks project)) (funcall hook project message))
+    (push message (commits project))
+    (cl-store:store *projects* +db-state+)))
 
 (defun start ()
+  (unless *projects*
+    (if (probe-file +db-state+)
+	(setf *projects* (cl-store:restore +db-state+))
+	(add-project (make-instance 'project :name "BRL-CAD" :hooks (list #'report-commit)))))
+  (setf *message-hooks* (list #'report-commit))
   (bot)
   (sleep 5)
   (start-pump))
 (defun stop ()
   (stop-bot)
-  (stop-pump))
+  (stop-pump)
+  (cl-store:store *projects* +db-state+))
