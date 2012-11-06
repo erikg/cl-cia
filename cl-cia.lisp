@@ -37,10 +37,8 @@
   (unless *pump*
     (setf *pump-running* t)
     (setf *pump* (bordeaux-threads:make-thread
-		    (lambda ()
-		      (loop while *pump-running* do (progn
-						      (pump) (sleep 5))))
-		    :name "cl-cia pumper"))))
+		  (lambda () (loop while *pump-running* do (progn (pump) (sleep 5))))
+		  :name "cl-cia pumper"))))
 (defun stop-pump ()
   (when (and *pump* *pump-running*)
     (setf *pump-running* '())
