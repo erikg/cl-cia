@@ -13,7 +13,7 @@
     (find-if (lambda (x)
 	       (setf l x)
 	       (multiple-value-setq (start end r1 r2)
-		 (cl-ppcre:scan (concatenate 'string regex "[ \t]*(.*)") x))
+		 (cl-ppcre:scan (concatenate 'string regex "[ \t]*(.*)[ \t]*$") x))
 	       start)
 	     lines)
     (when (and r1 r2)
@@ -24,7 +24,7 @@
 	  (mapcar
 	   (lambda (x)
 	     (multiple-value-bind (start end r1 r2)
-		 (cl-ppcre:scan (concatenate 'string regex "[ \t\]*(.*)") x)
+		 (cl-ppcre:scan (concatenate 'string regex "[ \t\]*(.*)[ \t]*$") x)
 	       (when (and start end r1 r2)
 		 (subseq x (aref r1 0) (aref r2 0)))))
 	   lines)))
@@ -61,6 +61,9 @@
       (alexandria:when-let ((message (load-commit-from-mail-message file)))
 	(unless (message-seen message)
 	  (push message *messages*)
-	  (if hooks
-	      (mapcar (lambda (x) (funcall x message)) hooks)
-	      t))))))
+	  (let ((res
+		 (if hooks
+		     (mapcar (lambda (x) (funcall x message)) hooks)
+		     '(t))))
+	    (unless (find nil res)
+	      (rename-file file (merge-pathnames +db-processed-mail-dir+ (file-namestring file))))))))))
