@@ -19,6 +19,16 @@
     (when (and r1 r2)
       (subseq l (aref r1 0) (aref r2 0)))))
 
+(defun snarf-all (regex lines)
+  (remove nil
+	  (mapcar
+	   (lambda (x)
+	     (multiple-value-bind (start end r1 r2)
+		 (cl-ppcre:scan (concatenate 'string regex "[ \t\]*(.*)") x)
+	       (when (and start end r1 r2)
+		 (subseq x (aref r1 0) (aref r2 0)))))
+	   lines)))
+
 (defun datify (datestr)
   "Attempt to convert a string to a local-time:timestamp object, using local-time:now if unable"
   ; and it always seems unable.
@@ -34,6 +44,7 @@
 	 (date (datify (snarf "^Date:" f)))
 	 (revision (snarf "^Revision:" f))
 	 (author (snarf "^Author:" f))
+	 (files (snarf-all "^Modified:" f))
 	 (body '()))
     (when (and revision author)
       (let ((start (+ (position-if (lambda (x) (cl-ppcre:scan "^Log Message:$" x)) f) 2))
@@ -41,7 +52,7 @@
 	(when (and start end)
 	  (setf body (format nil "~{~a ~}" (subseq f start end)))))
       (setf revision (parse-integer revision :junk-allowed t))
-      (make-instance 'commit :revision revision :timestamp date :user author :message body))))
+      (make-instance 'commit :files files :revision revision :timestamp date :user author :message body))))
 
 (defun process-mail-dir (&key (maildir +db-unprocessed-mail-dir+) (hooks '()))
   "Parse all messages in a mail dir, adding parsed commit messages to the list and applying the hooks"

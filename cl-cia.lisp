@@ -15,6 +15,7 @@
   ((timestamp :accessor timestamp :initarg :timestamp :initform (local-time:now))
    (user :accessor user :initarg :user)
    (revision :accessor revision :initarg :revision)
+   (files :accessor files :initarg :files)
    (message :accessor message :initarg :message)))
 
 (defmethod print-object ((c commit) stream)
