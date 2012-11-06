@@ -54,7 +54,7 @@
 	  (setf body (format nil "~{~a ~}" (subseq f start end)))))
       (setf revision (parse-integer revision :junk-allowed t))
       (values
-       (make-instance 'commit :files files :revision revision :timestamp date :user author :message body)
+       (make-instance 'commit :files files :revision revision :date date :user author :message body)
        (subseq list-id 0 (position #\Space list-id))))))
 
 (defun process-mail-dir (&key (maildir +db-unprocessed-mail-dir+) (hooks '()))
