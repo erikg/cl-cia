@@ -27,7 +27,7 @@
   (find message messages :test #'equals))
 
 (defun pump ()
-  (process-mail-dir :hook
+  (process-mail-dir :hooks
 		    (list
 		     #'report-commit)))
 
@@ -35,7 +35,8 @@
 (defvar *pump-running* '())
 (defun start-pump ()
   (unless *pump*
-    (setf *pumper* (bordeaux-threads:make-thread
+    (setf *pump-running* t)
+    (setf *pump* (bordeaux-threads:make-thread
 		    (lambda ()
 		      (loop while *pump-running* do (progn
 						      (pump) (sleep 5))))
