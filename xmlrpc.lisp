@@ -32,10 +32,12 @@
     (let ((author (funcall user-map-func (cadr (assoc :|author| xml))))
           (revision (parse-integer (nth (+ (position :|revision| (car xml)) 1) (car xml))))
           (date (local-time:parse-timestring (cadr (assoc :|date| xml))))
+	  (files '())
           (msg '()))
       (unless (find :|msg| xml) ; to handle empty commit messages
 	(setf msg (cadr (assoc :|msg| xml))))
-      (make-instance 'commit :user author :revision revision :date date :message msg))))
+      (setf files (mapcar #'cadr (cdr (assoc :|paths| xml))))
+      (make-instance 'commit :user author :revision revision :date date :message msg :files files))))
 
 (defun parse-svn-log-xml (xml &key user-map-func)
   (when (eq (car xml) :|log|)
