@@ -39,6 +39,11 @@
 (defmethod equals ((c1 commit) (c2 commit))
   (and (string-equal (user c1) (user c2)) (= (revision c1) (revision c2))))
 
+(defun resort-commits (project)
+  (bordeaux-threads:with-lock-held (*biglock*)
+    (setf (commits project) (sort (commits project) (lambda (x y) (> (revision x) (revision y))))))
+  t)
+
 (defvar *message-hooks* '())
 (defun message-seen (project message)
   (find message (commits project) :test #'equals))
