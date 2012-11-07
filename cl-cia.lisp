@@ -2,14 +2,27 @@
 
 (in-package #:cl-cia)
 
-(defparameter +db-dir+ (merge-pathnames "db/cia/" (user-homedir-pathname)))
-(defparameter +db-state+ (merge-pathnames "cia.state" +db-dir+))
+(defparameter +rcfile+ (merge-pathnames ".cia.lisp" (user-homedir-pathname)))
+(when (probe-file +rcfile+) (load +rcfile+))
+
+(defmacro prop (name form) `(unless (boundp ',name) (defparameter ,name ,form)))
+
+(prop +db-dir+ (merge-pathnames "db/cia/" (user-homedir-pathname)))
+(prop +db-state+ (merge-pathnames "cia.state" +db-dir+))
 
 ; mail form assumes the procmail matching rule puts it in $HOME/db/cia/mail/
 ; with the trailing slash inferring mailbox dir instead of mbox file.
-(defparameter +db-mail-dir+ (merge-pathnames "mail/" +db-dir+))
-(defparameter +db-unprocessed-mail-dir+ (merge-pathnames "new/" +db-mail-dir+))
-(defparameter +db-processed-mail-dir+ (merge-pathnames "cur/" +db-mail-dir+))
+
+(prop +db-mail-dir+ (merge-pathnames "mail/" +db-dir+))
+(prop +db-unprocessed-mail-dir+ (merge-pathnames "new/" +db-mail-dir+))
+(prop +db-processed-mail-dir+ (merge-pathnames "cur/" +db-mail-dir+))
+
+(prop +bot-nick+ "Notify")
+(prop +bot-nickserv-passwd+ '())
+(prop +bot-server+ "irc.freenode.net")
+(prop +bot-realname+ "BRL-CAD Commit Notification Bot")
+(prop +bot-ident+ "brlbot")
+(prop +bot-channels+ '("#brlcad"))
 
 (defvar *biglock* (bordeaux-threads:make-lock "cl-cia"))
 
