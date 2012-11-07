@@ -25,13 +25,14 @@
   (declare (ignore msg))
   '())
 
-(defun bot (&key (nick "CIA") (server "irc.freenode.net") (channel "#brlcad"))
-  (setf *connection* (cl-irc:connect :username nick :realname "BRL Bot" :server server :nickname nick))
+(defun bot (&key (nick +bot-nick+) (ident +bot-ident+) (server +bot-server+) (channels +bot-channels+) (realname +bot-realname+) (nickserv-passwd +bot-nickserv-passwd+))
+  (setf *connection* (cl-irc:connect :username ident :realname realname :server server :nickname nick))
   (cl-irc:add-hook *connection* :privmsg 'msg-hook)
-  (cl-irc:join *connection* channel)
-  (setf *bot-thread* (bordeaux-threads:make-thread (lambda ()
-						     (cl-irc:read-message-loop *connection*))
-						   :name "brlbot")))
+  (when nickserv-passwd
+    (cl-irc:privmsg *connection* "nickserv" (format nil "IDENTIFY ~A" nickserv-passwd)))
+  (dolist (c channels)
+    (cl-irc:join *connection* c))
+  (setf *bot-thread* (bordeaux-threads:make-thread (lambda () (cl-irc:read-message-loop *connection*)) :name "ircbot")))
 
 (defun stop-bot ()
   (cl-irc:quit *connection* "EVACUATE! EVACUATE!")
