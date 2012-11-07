@@ -31,8 +31,8 @@
    (date :accessor date :initarg :date :initform (local-time:now))
    (user :accessor user :initarg :user)
    (revision :accessor revision :initarg :revision)
-   (files :accessor files :initarg :files)
-   (message :accessor message :initarg :message)))
+   (files :accessor files :initarg :files :initform '())
+   (message :accessor message :initarg :message :initform '())))
 
 (defmethod print-object ((c commit) stream)
   (format stream "#<Commit: ~a@~a: ~a (at ~a)>" (user c) (revision c) (message c) (date c)))
