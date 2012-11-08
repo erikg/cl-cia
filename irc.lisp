@@ -12,14 +12,14 @@
 (defun ascii-ize (str col)
   (format nil "~C~2,'0d~a~C" #\etx col str #\etx))
 
-(defun format-commit (message)
+(defun format-commit (project message)
   (format nil "~a ~a: ~a"
-	  (ascii-ize (format nil "~a * ~a" (user message) (revision message)) 3)
+	  (ascii-ize (format nil "~a:~a * ~a" (name project) (user message) (revision message)) 3)
 	  (filestr (files message))
 	  (message message)))
 
 (defun report-commit (project message)
-  (cl-irc:privmsg *connection* (channel project) (format-commit message)))
+  (cl-irc:privmsg *connection* (channel project) (format-commit project message)))
 
 (defun msg-hook (msg)
   (declare (ignore msg))
