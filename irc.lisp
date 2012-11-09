@@ -9,11 +9,10 @@
 (defvar *notices* '())
 
 (defun filestr (files)
-  (if (> (length files) 1)
-      (if (> (length files) 3)
-	  (format nil "(~a ~a and ~a others)" (car files) (cadr files) (- (length files) 2))
-	  (format nil "(~{~a~^ ~})" files)))
-      (car files)))
+  (cond
+    ((> (length files) 3) (format nil "(~a ~a and ~a others)" (car files) (cadr files) (- (length files) 2)))
+    ((> (length files) 1) (format nil "(~{~a~^ ~})" files))
+    (t (car files))))
 
 (defun ascii-ize (str col)
   (format nil "~C~2,'0d~a~C" #\etx col str #\etx))
