@@ -20,7 +20,7 @@
 (prop +bot-nick+ "Notify")
 (prop +bot-nickserv-passwd+ '())
 (prop +bot-server+ "irc.freenode.net")
-(prop +bot-realname+ "BRL-CAD Commit Notification Bot")
+(prop +bot-realname+ "BRL-CAD Commit Notification Bot - http://elfga.com/cia")
 (prop +bot-ident+ "brlbot")
 (prop +bot-channels+ '("#brlcad"))
 
