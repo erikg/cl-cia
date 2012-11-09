@@ -24,7 +24,8 @@
 |#
 
 (defun xmlrpc (str)
-  (s-xml:parse-xml (make-string-input-stream str)))
+  (when str
+    (s-xml:parse-xml (make-string-input-stream str))))
 
 (defun parse-svn-logentry (xml &key user-map-func)
   (unless user-map-func (setf user-map-func (lambda (name) name)))
