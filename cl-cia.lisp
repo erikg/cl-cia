@@ -62,6 +62,9 @@
 (defmethod equals ((c1 commit) (c2 commit))
   (and (string-equal (user c1) (user c2)) (= (revision c1) (revision c2))))
 
+(defmethod find-commit ((p project) (rev integer))
+  (find-if (lambda (x) (= (revision x) rev)) (commits p)))
+
 (defun commit-has-file (commit filename)
   (when (find filename (files commit) :test #'string=)
     t))
