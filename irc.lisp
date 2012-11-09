@@ -10,7 +10,9 @@
 
 (defun filestr (files)
   (if (> (length files) 1)
-      (format nil "(~{~a~^ ~})" files)
+      (if (> (length files) 3)
+	  (format nil "(~a ~a and ~a others)" (car files) (cadr files) (- (length files) 2))
+	  (format nil "(~{~a~^ ~})" files)))
       (car files)))
 
 (defun ascii-ize (str col)
