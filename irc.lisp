@@ -3,6 +3,10 @@
 
 (defvar *bot-thread* '())
 (defvar *connection* '())
+(defvar *notice-wrangler* '())
+(defvar *notice-wrangler-running* '())
+(defvar *notice-lock* (bordeaux-threads:make-lock "ircbot-notice-lock"))
+(defvar *notices* '())
 
 (defun filestr (files)
   (if (> (length files) 1)
@@ -19,7 +23,31 @@
 	  (message message)))
 
 (defun report-commit (project message)
-  (cl-irc:privmsg *connection* (channel project) (format-commit project message)))
+  (let ((msg (format-commit project message)))
+    (bordeaux-threads:with-lock-held (*notice-lock*)
+      (setf *notices*
+	    (append *notices* (list (list *connection* (channel project) msg)
+				    (list *connection* "#notify" msg)
+				    (list *connection* "##notify" msg)))))))
+
+(defun notice-wrangler ()
+  (sleep 1)
+  (when *notices*
+    (bordeaux-threads:with-lock-held (*notice-lock*)
+      (when *notices*
+	(apply #'cl-irc:privmsg (pop *notices*))))))
+
+(defun start-notice-wrangler ()
+  (bordeaux-threads:with-lock-held (*notice-lock*)
+    (setf *notice-wrangler-running* t)
+    (setf *notice-wrangler* (bordeaux-threads:make-thread
+			     (lambda ()
+			       (loop while *notice-wrangler-running* do (notice-wrangler)))
+			     :name "notice wrangler"))))
+
+(defun stop-notice-wrangler ()
+  (setf *notice-wrangler-running* '())
+  (bordeaux-threads:join-thread *notice-wrangler*))
 
 (defun msg-hook (msg)
   (declare (ignore msg))
