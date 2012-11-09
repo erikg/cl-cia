@@ -51,12 +51,11 @@
   (bordeaux-threads:join-thread *notice-wrangler*))
 
 (defun msg-hook (msg)
-  (declare (ignore msg))
-  '())
+  (format t "Msg recvd: ~a~%" msg))
 
 (defun bot (&key (nick +bot-nick+) (ident +bot-ident+) (server +bot-server+) (channels +bot-channels+) (realname +bot-realname+) (nickserv-passwd +bot-nickserv-passwd+))
   (setf *connection* (cl-irc:connect :username ident :realname realname :server server :nickname nick))
-  (cl-irc:add-hook *connection* :privmsg 'msg-hook)
+  (cl-irc:add-hook *connection* 'irc::irc-privmsg-message 'msg-hook)
   (when nickserv-passwd
     (cl-irc:privmsg *connection* "nickserv" (format nil "IDENTIFY ~A" nickserv-passwd)))
   (dolist (c channels)
