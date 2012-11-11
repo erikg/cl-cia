@@ -26,11 +26,10 @@
 
 (defvar *biglock* (bordeaux-threads:make-lock "cl-cia"))
 
-(defun load-state (&optional (place *state*) (file +db-state+))
-  (unless place
-    (if (probe-file file)
-	(setf place (cl-store:restore file))
-	(setf place (make-instance 'state :projects (list (make-instance 'project :name "BRL-CAD" :hooks (list #'report-commit))))))))  
+(defun load-state (&optional (file +db-state+))
+  (if (probe-file file)
+      (cl-store:restore file)
+      (make-instance 'state :projects (list (make-instance 'project :name "BRL-CAD" :hooks (list #'report-commit))))))
 (defun save-state (&optional (place *state*) (file +db-state+))
   (cl-store:store place file))
 
@@ -88,7 +87,7 @@
     (save-state)))
 
 (defun start ()
-  (load-state)
+  (setf *state* (load-state))
   (setf *message-hooks* (list #'report-commit))
   (bot)
   (sleep 5)
