@@ -56,16 +56,42 @@
     (push (list (irc::connection msg) (car (irc::arguments msg)) str) *notices*))) 
 
 (defun msg-hook (msg)
-  (when (string= (subseq (cadr (irc::arguments msg)) 0 7) "!notify")
+  (when (> (length (cadr (irc::arguments msg))) 9)
+    (when (string= (subseq (cadr (irc::arguments msg)) 0 7) "!notify")
       (let ((cmd (subseq (cadr (irc::arguments msg)) 8)))
 	(alexandria:if-let ((len (find cmd '(("Day" 1 :day) ("Week" 7 :day) ("Month" 1 :month) ("year" 1 :year) ("All" 99 :year)) :test (lambda (cmd def) (when (string-equal (car def) cmd) def)))))
 	  (respond msg (format nil "~{~{~a:~a~}~^, ~}" (count-commits-by-user-since (commits (find-project "brl-cad")) (local-time:timestamp- (local-time:now) (cadr len) (caddr len)))))
-	  (respond msg "es schlummert"))))
+	  (respond msg "es schlummert")))))
+  '())
+
+(defun notice-hook (msg)
+  (declare (ignore msg))
+  '())
+
+(defvar *excuses* '())
+(defun get-excuse ()
+  (unless *excuses*
+    (setf *excuses* (sort (list "No thanks"
+				"I need an adult! I need an adult!"
+				"Ugh, you're not my type"
+				"get offa me!")
+			  #'<
+			  :key (lambda (x)
+				 (declare (ignore x))
+				 (random 1.0)))))
+  (pop *excuses*))
+(defun action-hook (msg)
+  (let ((content (cadr (irc::arguments msg))))
+    (when (and (eq (irc::ctcp-message-type content) :action)
+	       (string-equal (subseq content 1 (- (length content) 1)) "ACTION hugs notify"))
+      (respond msg (get-excuse))))
   '())
 
 (defun bot (&key (nick +bot-nick+) (ident +bot-ident+) (server +bot-server+) (channels +bot-channels+) (realname +bot-realname+) (nickserv-passwd +bot-nickserv-passwd+))
   (setf *connection* (cl-irc:connect :username ident :realname realname :server server :nickname nick))
   (cl-irc:add-hook *connection* 'irc::irc-privmsg-message 'msg-hook)
+  (cl-irc:add-hook *connection* 'irc::irc-notice-message 'notice-hook)
+  (cl-irc:add-hook *connection* 'irc::ctcp-action-message 'action-hook)
   (when nickserv-passwd
     (cl-irc:privmsg *connection* "nickserv" (format nil "IDENTIFY ~A" nickserv-passwd)))
   (dolist (c channels)
