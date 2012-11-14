@@ -20,7 +20,7 @@
 		     (t el))))
     (with-open-file (out propfile :direction :output)
       (dolist (p +proplist+)
-	(format t "(defparameter ~(~a~) ~a)~%" p
+	(format out "(defparameter ~(~a~) ~a)~%" p
 		(prel (symbol-value p)))))))
 
 (prop +db-dir+ (merge-pathnames "db/cia/" (user-homedir-pathname)))
