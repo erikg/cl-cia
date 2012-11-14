@@ -5,7 +5,23 @@
 (defparameter +rcfile+ (merge-pathnames ".cia.lisp" (user-homedir-pathname)))
 (when (probe-file +rcfile+) (load +rcfile+))
 
-(defmacro prop (name form) `(unless (boundp ',name) (defparameter ,name ,form)))
+(defparameter +proplist+ '())
+(defmacro prop (name form)
+  `(progn
+     (unless (boundp ',name) (defparameter ,name ,form))
+     (push ',name +proplist+)))
+
+(defun write-propfile (&optional (propfile +rcfile+))
+  (labels ((prel (el)
+		   (typecase el
+		     (string (format nil "\"~a\"" el))
+		     (list (format nil "(list ~{~a~^ ~})" (mapcar #'prel el)))
+		     (pathname (format nil "#P\"~a\"" el))
+		     (t el))))
+    (with-open-file (out propfile :direction :output)
+      (dolist (p +proplist+)
+	(format t "(defparameter ~(~a~) ~a)~%" p
+		(prel (symbol-value p)))))))
 
 (prop +db-dir+ (merge-pathnames "db/cia/" (user-homedir-pathname)))
 (prop +db-state+ (merge-pathnames "cia.state" +db-dir+))
@@ -20,9 +36,9 @@
 (prop +bot-nick+ "Notify")
 (prop +bot-nickserv-passwd+ '())
 (prop +bot-server+ "irc.freenode.net")
-(prop +bot-realname+ "BRL-CAD Commit Notification Bot - http://elfga.com/cia")
-(prop +bot-ident+ "brlbot")
-(prop +bot-channels+ '("#brlcad"))
+(prop +bot-realname+ "Commit Notification Bot - http://elfga.com/cia")
+(prop +bot-ident+ "notify")
+(prop +bot-channels+ '("#notify" "##notify"))
 
 (defvar *biglock* (bordeaux-threads:make-lock "cl-cia"))
 
