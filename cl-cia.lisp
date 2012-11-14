@@ -103,6 +103,26 @@
     (push message (commits project))
     (save-state)))
 
+(defun in-the-last (commits &optional start end)
+  (unless start (setf start (local-time:timestamp- (local-time:now) 24 :hour)))
+  (unless end (setf end (local-time:now)))
+  (remove-if (lambda (x)
+               (or
+                (local-time:timestamp< (cl-cia::date x) start)
+                (local-time:timestamp> (cl-cia::date x) end)))
+             commits))
+
+(defun count-commits-by-user-since (commits &optional start end)
+  (let ((last24hr (in-the-last commits start end))
+        (bucket '()))
+    (dolist (c last24hr)
+      (let ((suck (assoc (user c) bucket :test #'string-equal)))
+        (if suck
+            (incf (cadr suck))
+            (push (list (user c) 1) bucket))))
+    (sort bucket (lambda (x y) (> (cadr x) (cadr y))))))
+
+
 (defun start ()
   (load-state)
   (setf *message-hooks* (list #'report-commit))
