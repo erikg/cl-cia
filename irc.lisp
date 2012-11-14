@@ -1,4 +1,5 @@
 
+
 (in-package :cl-cia)
 
 (defvar *bot-thread* '())
@@ -50,8 +51,17 @@
   (setf *notice-wrangler-running* '())
   (bordeaux-threads:join-thread *notice-wrangler*))
 
+(defun respond (msg str)
+  (bordeaux-threads:with-lock-held (*notice-lock*)
+    (push (list (irc::connection msg) (car (irc::arguments msg)) str) *notices*))) 
+
 (defun msg-hook (msg)
-  (format t "Msg recvd: ~a~%" msg))
+  (when (string= (subseq (cadr (irc::arguments msg)) 0 7) "!notify")
+      (let ((cmd (subseq (cadr (irc::arguments msg)) 8)))
+	(alexandria:if-let ((len (find cmd '(("Day" 1 :day) ("Week" 7 :day) ("Month" 1 :month) ("year" 1 :year) ("All" 99 :year)) :test (lambda (cmd def) (when (string-equal (car def) cmd) def)))))
+	  (respond msg (format nil "~{~{~a:~a~}~^, ~}" (count-commits-by-user-since (commits (find-project "brl-cad")) (local-time:timestamp- (local-time:now) (cadr len) (caddr len)))))
+	  (respond msg "es schlummert"))))
+  '())
 
 (defun bot (&key (nick +bot-nick+) (ident +bot-ident+) (server +bot-server+) (channels +bot-channels+) (realname +bot-realname+) (nickserv-passwd +bot-nickserv-passwd+))
   (setf *connection* (cl-irc:connect :username ident :realname realname :server server :nickname nick))
