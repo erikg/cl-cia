@@ -36,7 +36,11 @@
   (when *notices*
     (bordeaux-threads:with-lock-held (*notice-lock*)
       (when *notices*
-	(apply #'cl-irc:privmsg (pop *notices*))))))
+	(let ((n (pop *notices*)))
+;	  (handler-case
+	      (apply #'cl-irc:privmsg n)
+;	    (t '()))
+)))))
 
 (defun start-notice-wrangler ()
   (bordeaux-threads:with-lock-held (*notice-lock*)
