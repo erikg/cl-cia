@@ -23,14 +23,16 @@
 	  (ascii-ize (format nil "~a:~a * ~a" (name project) (user message) (revision message)) 3)
 	  (filestr (files message))
 	  (message message)))
+(defmacro post (obj place)
+  `(setf ,place (append ,place (list ,obj))))
 
 (defun report-commit (project message)
   (let ((msg (format-commit project message)))
     (bordeaux-threads:with-lock-held (*notice-lock*)
-      (setf *notices*
-	    (append *notices* (list (list *connection* (channel project) msg)
-				    (list *connection* "#notify" msg)
-				    (list *connection* "##notify" msg)))))))
+      (post (list *connection* "#notify" msg) *notices*)
+      (post (list *connection* "##notify" msg) *notices*)
+      (dolist (c (channels project))
+	(post (list *connection* c msg) *notices*)))))
 
 (defun notice-wrangler ()
   (sleep 1)
