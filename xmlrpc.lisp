@@ -23,9 +23,41 @@
 
 |#
 
+(defun gettags (xml tag)
+  (let ((e (find-if (lambda (x) (or (and (symbolp x) (eq tag x)) (and (listp x) (symbolp (car x)) (eq (car x) tag)))) xml)))
+    (when e (cdr e))))
+(defun gettag (xml tag) (car (gettags xml tag)))
+
+(defun parsexml (str)
+  (alexandria:when-let ((p (s-xml:parse-xml-string str)))
+    (when (eq (car p) :|message|)
+      (let* ((source (gettags p :|source|))
+	     (proj (gettag source :|project|))
+	     (branch (gettag source :|branch|))
+	     (timestamp (parse-integer (gettag p :|timestamp|)))
+	     (body (gettags p :|body|)))
+	(mapcar (lambda (c)
+	  (let ((author (gettag c :|author|))
+		(rev (gettag c :|revision|))
+		(log (gettag c :|log|))
+		(files (gettags c :|files|)))
+	    (list
+			    proj
+			    branch
+	     (make-instance 'commit
+			    :user author
+			    :revision rev
+			    :date (local-time:unix-to-timestamp timestamp)
+			    :files (mapcar (lambda (file) (string-trim " \t" (cadr file))) files)
+			    :message log))))
+	  body)))))
+
 (defun xmlrpc (str)
   (when str
-    (s-xml:parse-xml (make-string-input-stream str))))
+    (let ((res (parsexml str)))
+      (dolist (r res)
+	(alexandria:when-let ((proj (find-project (car r))))
+	  (add-message proj (caddr r)))))))
 
 (defun parse-svn-logentry (xml &key user-map-func)
   (unless user-map-func (setf user-map-func (lambda (name) name)))
