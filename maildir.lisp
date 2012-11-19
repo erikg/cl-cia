@@ -72,7 +72,7 @@
 (defvar *pump* '())
 (defvar *pump-running* '())
 (defun start-pump ()
-  (unless *pump*
+  (unless (and *pump* (bordeaux-threads:threadp *pump*) (bordeaux-threads:thread-alive-p *pump*))
     (setf *pump-running* t)
     (setf *pump* (bordeaux-threads:make-thread
 		  (lambda () (loop while *pump-running* do (progn (pump) (sleep 5))))
