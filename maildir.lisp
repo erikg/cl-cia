@@ -65,7 +65,8 @@
 	  (when (add-message project message)
 	    (let ((res (if hooks (mapcar (lambda (x) (funcall x message)) hooks) '(t))))
 	      (unless (find nil res)
-		(rename-file file (merge-pathnames +db-processed-mail-dir+ (file-namestring file)))))))))))
+		(rename-file file (merge-pathnames +db-processed-mail-dir+ (file-namestring file))))))))))
+  (save-state))
 
 (defun pump ()  (process-mail-dir))
 (defvar *pump* '())
