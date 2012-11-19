@@ -50,7 +50,7 @@
     (setf *notice-wrangler* (bordeaux-threads:make-thread
 			     (lambda ()
 			       (loop while *notice-wrangler-running* do (notice-wrangler)))
-			     :name "notice wrangler"))))
+			     :name "cl-cia notice wrangler"))))
 
 (defun stop-notice-wrangler ()
   (setf *notice-wrangler-running* '())
@@ -101,7 +101,7 @@
     (cl-irc:privmsg *connection* "nickserv" (format nil "IDENTIFY ~A" nickserv-passwd)))
   (dolist (c channels)
     (cl-irc:join *connection* c))
-  (setf *bot-thread* (bordeaux-threads:make-thread (lambda () (cl-irc:read-message-loop *connection*)) :name "ircbot")))
+  (setf *bot-thread* (bordeaux-threads:make-thread (lambda () (cl-irc:read-message-loop *connection*)) :name "cl-cia ircbot")))
 
 (defun stop-bot ()
   (cl-irc:quit *connection* "EVACUATE! EVACUATE!")
