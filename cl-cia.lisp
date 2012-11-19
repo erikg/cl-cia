@@ -63,6 +63,7 @@
 (defclass state ()
   ((projects :accessor projects :initarg :projects  :initform '())
    (notices :accessor notices :initarg :notices :initform '())
+   (todo :accessor todo :initarg :todo :initform '())
    (dirty :accessor dirty :initarg :dirty :initform '())))
 (defvar *state* '())
 (defun add-project (project)
