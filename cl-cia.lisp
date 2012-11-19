@@ -64,7 +64,11 @@
 (defun add-project (project)
   (push project (projects *state*)))
 (defmethod find-project ((name t) &optional (state *state*))
-  (find-if (lambda (x) (string-equal (name x) name)) (projects state)))
+  (find-if (lambda (x)
+	     (or
+	      (string-equal (name x) name)
+	      (find name (channels x) :test #'string-equal)))
+	   (projects state)))
 (defclass commit ()
   ((timestamp :accessor timestamp :initform (local-time:now))
    (date :accessor date :initarg :date :initform (local-time:now))
