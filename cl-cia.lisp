@@ -47,7 +47,8 @@
       (cl-store:restore file)
       (make-instance 'state :projects (list (make-instance 'project :name "BRL-CAD" :hooks (list #'report-commit))))))
 (defun save-state (&optional (place *state*) (file +db-state+))
-  (cl-store:store place file))
+  (bordeaux-threads:with-lock-held (*biglock*)
+    (cl-store:store place file)))
 
 (defclass project ()
   ((name :accessor name :initarg :name)
