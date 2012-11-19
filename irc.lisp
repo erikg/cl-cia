@@ -72,7 +72,7 @@
       (month (format t "Bingk~%") (respond msg (format nil "~{~{~a:~a~}~^, ~}" (count-commits-by-user-since (commits proj) (local-time:timestamp- (local-time:now) 1 :month)))))
       (year (respond msg (format nil "~{~{~a:~a~}~^, ~}" (count-commits-by-user-since (commits proj) (local-time:timestamp- (local-time:now) 1 :year)))))
       (all (respond msg (format nil "~{~{~a:~a~}~^, ~}" (count-commits-by-user-since (commits proj) (local-time:universal-to-timestamp 0)))))
-      (todo (Push (list msg (string-trim " " (subseq cmdstr (length cmd)))) (todo *state*)) (respond msg "OK")))))
+      (todo (Push (list (irc::user msg) (car (irc::arguments msg)) (string-trim " " (subseq cmdstr (length cmd)))) (todo *state*)) (respond msg "OK")))))
 
 (defun msg-hook (msg)
   (when (> (length (cadr (irc::arguments msg))) 9)
