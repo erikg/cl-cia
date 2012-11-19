@@ -7,7 +7,6 @@
 (defvar *notice-wrangler* '())
 (defvar *notice-wrangler-running* '())
 (defvar *notice-lock* (bordeaux-threads:make-lock "ircbot-notice-lock"))
-(defvar *notices* '())
 
 (defun filestr (files)
   (cond
@@ -29,17 +28,17 @@
 (defun report-commit (project message)
   (let ((msg (format-commit project message)))
     (bordeaux-threads:with-lock-held (*notice-lock*)
-      (post (list *connection* "#notify" msg) *notices*)
-      (post (list *connection* "##notify" msg) *notices*)
+      (post (list *connection* "#notify" msg) (notices *state*))
+      (post (list *connection* "##notify" msg) (notices *state*))
       (dolist (c (channels project))
-	(post (list *connection* c msg) *notices*)))))
+	(post (list *connection* c msg) (notices *state*))))))
 
 (defun notice-wrangler ()
   (sleep 1)
-  (when *notices*
+  (when (notices *state*)
     (bordeaux-threads:with-lock-held (*notice-lock*)
-      (when *notices*
-	(let ((n (pop *notices*)))
+      (when (notices *state*)
+	(let ((n (pop (notices *state*))))
 ;	  (handler-case
 	      (apply #'cl-irc:privmsg n)
 ;	    (t '()))
@@ -59,7 +58,7 @@
 
 (defun respond (msg str)
   (bordeaux-threads:with-lock-held (*notice-lock*)
-    (push (list (irc::connection msg) (car (irc::arguments msg)) str) *notices*))) 
+    (push (list (irc::connection msg) (car (irc::arguments msg)) str) (notices *state*))))
 
 (defun msg-hook (msg)
   (when (> (length (cadr (irc::arguments msg))) 9)
