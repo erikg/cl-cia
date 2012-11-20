@@ -32,6 +32,13 @@
       (post (list *connection* "##notify" msg) (notices *state*))
       (dolist (c (channels project))
 	(post (list *connection* c msg) (notices *state*))))))
+(defun report-msg (project msg)
+  (bordeaux-threads:with-lock-held (*notice-lock*)
+    (post (list *connection* "#notify" msg) (notices *state*))
+    (post (list *connection* "##notify" msg) (notices *state*))
+    (when project
+      (dolist (c (channels project))
+	(post (list *connection* c msg) (notices *state*))))))
 
 (defun notice-wrangler ()
   (sleep 1)
