@@ -25,13 +25,6 @@
 (defmacro post (obj place)
   `(setf ,place (append ,place (list ,obj))))
 
-(defun report-commit (project message)
-  (let ((msg (format-commit project message)))
-    (bordeaux-threads:with-lock-held (*notice-lock*)
-      (post (list *connection* "#notify" msg) (notices *state*))
-      (post (list *connection* "##notify" msg) (notices *state*))
-      (dolist (c (channels project))
-	(post (list *connection* c msg) (notices *state*))))))
 (defun report-msg (project msg)
   (bordeaux-threads:with-lock-held (*notice-lock*)
     (post (list *connection* "#notify" msg) (notices *state*))
@@ -39,6 +32,8 @@
     (when project
       (dolist (c (channels project))
 	(post (list *connection* c msg) (notices *state*))))))
+(defun report-commit (project message)
+  (report-msg project (format-commit project message)))
 
 (defun notice-wrangler ()
   (sleep 1)
