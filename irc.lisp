@@ -2,6 +2,8 @@
 
 (in-package :cl-cia)
 
+(defvar +irc-line-length+ 420)
+
 (defvar *bot-thread* '())
 (defvar *connection* '())
 (defvar *notice-wrangler* '())
@@ -25,15 +27,37 @@
 (defmacro post (obj place)
   `(setf ,place (append ,place (list ,obj))))
 
+(defun truncate-for-irc (msg &optional (len +irc-line-length+))
+  (let ((m (substitute #\Space #\Newline msg)))
+    (if (< (length m) len)
+	m
+	(loop for i from len downto 0
+	   until (eq (char m i) #\Space)
+	   finally (return (concatenate 'string (subseq m 0 i) "..."))))))
+(defun split-for-irc (msg &optional (len +irc-line-length+))
+  (let ((m (substitute #\Space #\Newline msg)))
+    (if (< (length m) len)
+	(list m)
+	(loop for i from len downto 0
+	   until (eq (char m i) #\Space)
+	   finally (return (cons (subseq m 0 i) (split-for-irc (subseq m (+ i 1)))))))))
+(defun split-to-3-for-irc (msg &optional (len +irc-line-length+))
+  (let ((bits (split-for-irc msg len)))
+    (if (<= (length bits) 3)
+	bits
+	(list (car bits) (cadr bits) (concatenate 'string (caddr bits) "...")))))
+
 (defun report-msg (project msg)
   (bordeaux-threads:with-lock-held (*notice-lock*)
-    (post (list *connection* "#notify" msg) (notices *state*))
-    (post (list *connection* "##notify" msg) (notices *state*))
-    (when project
-      (dolist (c (channels project))
-	(post (list *connection* c msg) (notices *state*))))))
+    (dolist (m (split-for-irc msg))
+      (post (list *connection* "#notify" m) (notices *state*))
+      (post (list *connection* "##notify" m) (notices *state*))
+      (when project
+	(dolist (c (channels project))
+	  (post (list *connection* c m) (notices *state*)))))))
 (defun report-commit (project message)
-  (report-msg project (format-commit project message)))
+  (dolist (b (split-to-3-for-irc (format-commit project message)))
+    (report-msg project b)))
 
 (defun notice-wrangler ()
   (sleep 1)
