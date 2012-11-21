@@ -74,6 +74,8 @@
 	      (string-equal (name x) name)
 	      (find name (channels x) :test #'string-equal)))
 	   (projects state)))
+(defun all-channels (&optional (state *state*))
+  (remove-duplicates (alexandria:flatten (cons '("#notify" "##notify") (mapcar #'channels (projects state)))) :test #'string-equal))
 (defclass commit ()
   ((timestamp :accessor timestamp :initform (local-time:now))
    (date :accessor date :initarg :date :initform (local-time:now))
@@ -130,7 +132,6 @@
             (incf (cadr suck))
             (push (list (user c) 1) bucket))))
     (sort bucket (lambda (x y) (> (cadr x) (cadr y))))))
-
 
 (defun start ()
   (setf *state* (load-state))
