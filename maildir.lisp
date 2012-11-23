@@ -34,7 +34,7 @@
 	(let ((argname (subseq (car lines) start (- end 1))))
 	  (cons
 	   (cons argname
-		 (if (or (not nextargline) (> nextargline 1))
+		 (if (or (not nextargline) (>= nextargline 1))
 		     (trimmulti (subseq lines 0 (when nextargline (+ nextargline 1))) end)
 		     (list (string-trim " " (subseq (car lines) end)))))
 	   (fieldinate (if nextargline
@@ -62,25 +62,33 @@
 			  ;; this probably needs more work
 			  (files (or (mail-element "Modified Paths" body) (mail-element "Modified" body)))
 			  ;; the actual commit log message
-			  (log (or (mail-element "Log" body) (mail-element "Log Message" body))))
+			  (log (or (mail-element "Log" body) (mail-element "Log Message" body)))
+			  (project t) ;can't be nil or when-let fails
+			  )
       ;; SVN::Notify likes to shove "-----" lines in, so try to eat those
       (when (and (listp log) (cl-ppcre:scan "^-*$" (car log)) (pop log)))
       (when (and (listp files) (cl-ppcre:scan "^-*$" (car files))) (pop files))
+      (setf project (find-project-by-list-id
+		     (let ((list-id (mail-element "List-Id" header)))
+		       (if (listp list-id)
+			   (format nil "~{~a~}" list-id)
+			   list-id))))
       (unless (eq (type-of files) 'list) (setf files (list files)))
-      (values
-       (make-instance 'commit :files files :revision revision :date date :user author :message log)
-       list-id))))
+      (when (listp revision) (setf revision (car revision)))
+      (when (and project revision author)
+	(values
+	 (make-instance 'commit :files files :revision revision :date date :user author :message log)
+	 project)))))
 
 (defun process-mail-dir (&key (maildir +db-unprocessed-mail-dir+) (hooks '()))
   "Parse all messages in a mail dir, adding parsed commit messages to the list and applying the hooks"
   (bordeaux-threads:with-lock-held (*biglock*)
     (dolist (file (cl-fad:list-directory maildir))
-      (multiple-value-bind (message project-name) (load-commit-from-mail-message file)
-	(alexandria:when-let (project (find-project project-name))
-	  (when (add-message project message)
-	    (let ((res (if hooks (mapcar (lambda (x) (funcall x message)) hooks) '(t))))
-	      (unless (find nil res)
-		(rename-file file (merge-pathnames +db-processed-mail-dir+ (file-namestring file))))))))))
+      (multiple-value-bind (message project) (load-commit-from-mail-message file)
+	(when (add-message project message)
+	  (let ((res (if hooks (mapcar (lambda (x) (funcall x message)) hooks) '(t))))
+	    (unless (find nil res)
+	      (rename-file file (merge-pathnames +db-processed-mail-dir+ (file-namestring file)))))))))
   (save-state))
 
 (defun pump ()  (process-mail-dir))
