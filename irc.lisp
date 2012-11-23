@@ -36,7 +36,7 @@
 	   finally (return (concatenate 'string (subseq m 0 i) "..."))))))
 (defun split-for-irc (msg &optional (len +irc-line-length+))
   (let ((m (substitute #\Space #\Newline msg)))
-    (if (< (length m) len)
+    (if (<= (length m) len)
 	(list m)
 	(loop for i from len downto 0
 	   until (eq (char m i) #\Space)
@@ -56,8 +56,9 @@
 	(dolist (c (channels project))
 	  (post (list *connection* c m) (notices *state*)))))))
 (defun report-commit (project message)
-  (dolist (b (split-to-3-for-irc (format-commit project message)))
-    (report-msg project b)))
+  (when (and project message)
+    (dolist (b (split-to-3-for-irc (format-commit project message)))
+      (report-msg project b))))
 
 (defun notice-wrangler ()
   (sleep 1)
