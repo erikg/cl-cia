@@ -19,11 +19,13 @@
 (defun ascii-ize (str col)
   (format nil "~C~2,'0d~a~C" #\etx col str #\etx))
 
+(defun tidy-for-irc (msg)
+  (string-trim " " (cl-ppcre:regex-replace-all "[ \\t\\n]+" (if (listp msg) (format nil "~{~a~^ ~}" msg) msg) " ")))
 (defun format-commit (project message)
   (format nil "~a ~a: ~a"
 	  (ascii-ize (format nil "~a:~a * ~a" (name project) (user message) (revision message)) 3)
 	  (filestr (files message))
-	  (message message)))
+	  (message (tidy-for-irc message))))
 (defmacro post (obj place)
   `(setf ,place (append ,place (list ,obj))))
 
