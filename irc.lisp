@@ -25,7 +25,7 @@
   (format nil "~a ~a: ~a"
 	  (ascii-ize (format nil "~a:~a * ~a" (name project) (user message) (revision message)) 3)
 	  (filestr (files message))
-	  (message (tidy-for-irc message))))
+	  (tidy-for-irc (message message))))
 (defmacro post (obj place)
   `(setf ,place (append ,place (list ,obj))))
 
