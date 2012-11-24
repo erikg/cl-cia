@@ -87,6 +87,10 @@
   (bordeaux-threads:with-lock-held (*notice-lock*)
     (push (list (irc::connection msg) (car (irc::arguments msg)) str) (notices *state*))))
 
+(defun report-commit-frequency-for-irc (proj timeval timetype)
+  (if proj
+    (format nil "~{~{~a:~a~}~^, ~}" (count-commits-by-user-since (commits proj) (local-time:timestamp- (local-time:now) timeval timetype)))
+    "No project specified"))
 (defun docmd (msg cmdstr)
   (let* ((cmds (split-sequence:split-sequence #\Space cmdstr))
 	 (cmd (string-upcase (car cmds)))
@@ -94,10 +98,10 @@
     (setf proj (find-project (car (irc::arguments msg))))
     (unless proj (setf proj (find-project (car (last cmds)))))
     (case (intern cmd 'cl-cia)
-      (day (respond msg (format nil "~{~{~a:~a~}~^, ~}" (count-commits-by-user-since (commits proj) (local-time:timestamp- (local-time:now) 1 :day)))))
-      (week (respond msg (format nil "~{~{~a:~a~}~^, ~}" (count-commits-by-user-since (commits proj) (local-time:timestamp- (local-time:now) 7 :day)))))
-      (month (format t "Bingk~%") (respond msg (format nil "~{~{~a:~a~}~^, ~}" (count-commits-by-user-since (commits proj) (local-time:timestamp- (local-time:now) 1 :month)))))
-      (year (respond msg (format nil "~{~{~a:~a~}~^, ~}" (count-commits-by-user-since (commits proj) (local-time:timestamp- (local-time:now) 1 :year)))))
+      (day (respond msg (report-commit-frequency-for-irc proj 1 :day)))
+      (week (respond msg (report-commit-frequency-for-irc proj 7 :day)))
+      (month (respond msg (report-commit-frequency-for-irc proj 1 :month)))
+      (year (respond msg (report-commit-frequency-for-irc proj 1 :year)))
       (all (respond msg (format nil "~{~{~a:~a~}~^, ~}" (count-commits-by-user-since (commits proj) (local-time:universal-to-timestamp 0)))))
       (todo (Push (list (irc::user msg) (car (irc::arguments msg)) (string-trim " " (subseq cmdstr (length cmd)))) (todo *state*)) (respond msg "OK")))))
 
