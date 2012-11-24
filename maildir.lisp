@@ -60,11 +60,16 @@
 			  (revision (or (mail-element "Revision" body) (mail-element "New Revision" body)))
 			  (author (mail-element "Author" body))
 			  ;; this probably needs more work
-			  (files (or (mail-element "Modified Paths" body) (mail-element "Modified" body)))
+			  (files t)
 			  ;; the actual commit log message
 			  (log (or (mail-element "Log" body) (mail-element "Log Message" body)))
 			  (project t) ;can't be nil or when-let fails
 			  )
+      (setf files (or
+		   (mail-element "Modified" body)
+		   (mail-element "Modified Paths" body)
+		   (mail-element "Added" body)
+		   (mail-element "Deleted" body)))
       ;; SVN::Notify likes to shove "-----" lines in, so try to eat those
       (when (and (listp log) (cl-ppcre:scan "^-*$" (car log)) (pop log)))
       (when (and (listp files) (cl-ppcre:scan "^-*$" (car files))) (pop files))
