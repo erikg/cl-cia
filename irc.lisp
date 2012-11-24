@@ -10,6 +10,11 @@
 (defvar *notice-wrangler-running* '())
 (defvar *notice-lock* (bordeaux-threads:make-lock "ircbot-notice-lock"))
 
+(defun find-connection-by-name (name)
+  *connection*)
+(defun find-network-by-connection (conn)
+  "freenode")
+
 (defun filestr (files)
   (cond
     ((> (length files) 3) (format nil "(~a ~a and ~a others)" (car files) (cadr files) (- (length files) 2)))
@@ -52,11 +57,12 @@
 (defun report-msg (project msg)
   (bordeaux-threads:with-lock-held (*notice-lock*)
     (dolist (m (split-for-irc msg))
-      (post (list *connection* "#notify" m) (notices *state*))
-      (post (list *connection* "##notify" m) (notices *state*))
+      (post (list "freenode" "#notify" m) (notices *state*))
+      (post (list "freenode" "##notify" m) (notices *state*))
       (when project
 	(dolist (c (channels project))
-	  (post (list *connection* c m) (notices *state*)))))))
+	  (post (list "freenode" c m) (notices *state*)))))))
+
 (defun report-commit (project message)
   (when (and project message)
     (dolist (b (split-to-3-for-irc (format-commit project message)))
@@ -69,7 +75,7 @@
       (when (notices *state*)
 	(let ((n (pop (notices *state*))))
 ;	  (handler-case
-	      (apply #'cl-irc:privmsg n)
+	      (cl-irc:privmsg (find-connection-by-name (car n)) (cadr n) (caddr n))
 ;	    (t '()))
 )))))
 
@@ -87,12 +93,13 @@
 
 (defun respond (msg str)
   (bordeaux-threads:with-lock-held (*notice-lock*)
-    (push (list (irc::connection msg) (car (irc::arguments msg)) str) (notices *state*))))
+    (push (list (find-network-by-connection (irc::connection msg)) (car (irc::arguments msg)) str) (notices *state*))))
 
 (defun report-commit-frequency-for-irc (proj timeval timetype)
   (if proj
     (format nil "~{~{~a:~a~}~^, ~}" (count-commits-by-user-since (commits proj) (local-time:timestamp- (local-time:now) timeval timetype)))
     "No project specified"))
+
 (defun docmd (msg cmdstr)
   (let* ((cmds (split-sequence:split-sequence #\Space cmdstr))
 	 (cmd (string-upcase (car cmds)))
@@ -128,6 +135,7 @@
 				 (declare (ignore x))
 				 (random 1.0)))))
   (pop *excuses*))
+
 (defun action-hook (msg)
   (let ((content (cadr (irc::arguments msg))))
     (when (and (eq (irc::ctcp-message-type content) :action)
@@ -136,18 +144,18 @@
   '())
 
 (defun bot (&key (nick +bot-nick+) (ident +bot-ident+) (server +bot-server+) (channels +bot-channels+) (realname +bot-realname+) (nickserv-passwd +bot-nickserv-passwd+))
-  (setf *connection* (cl-irc:connect :username ident :realname realname :server server :nickname nick))
-  (cl-irc:add-hook *connection* 'irc::irc-privmsg-message 'msg-hook)
-  (cl-irc:add-hook *connection* 'irc::irc-notice-message 'notice-hook)
-  (cl-irc:add-hook *connection* 'irc::ctcp-action-message 'action-hook)
+  (setf (find-connection-by-name "freenode") (cl-irc:connect :username ident :realname realname :server server :nickname nick))
+  (cl-irc:add-hook (find-connection-by-name "freenode") 'irc::irc-privmsg-message 'msg-hook)
+  (cl-irc:add-hook (find-connection-by-name "freenode") 'irc::irc-notice-message 'notice-hook)
+  (cl-irc:add-hook (find-connection-by-name "freenode") 'irc::ctcp-action-message 'action-hook)
   (when nickserv-passwd
-    (cl-irc:privmsg *connection* "nickserv" (format nil "IDENTIFY ~A" nickserv-passwd)))
+    (cl-irc:privmsg (find-connection-by-name "freenode") "nickserv" (format nil "IDENTIFY ~A" nickserv-passwd)))
   (dolist (c channels)
-    (cl-irc:join *connection* c))
-  (setf *bot-thread* (bordeaux-threads:make-thread (lambda () (cl-irc:read-message-loop *connection*)) :name "cl-cia ircbot")))
+    (cl-irc:join (find-connection-by-name "freenode") c))
+  (setf *bot-thread* (bordeaux-threads:make-thread (lambda () (cl-irc:read-message-loop (find-connection-by-name "freenode"))) :name "cl-cia ircbot")))
 
 (defun stop-bot ()
-  (cl-irc:quit *connection* "EVACUATE! EVACUATE!")
+  (cl-irc:quit (find-connection-by-name "freenode") "EVACUATE! EVACUATE!")
 ;  (bordeaux-threads:join-thread *bot-thread*)
   (setf *bot-thread* '())
 )
