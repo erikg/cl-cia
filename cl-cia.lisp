@@ -46,9 +46,9 @@
   (if (probe-file file)
       (cl-store:restore file)
       (make-instance 'state :projects (list (make-instance 'project :name "BRL-CAD" :hooks (list #'report-commit))))))
-(defun save-state (&optional (place *state*) (file +db-state+))
+(defun save-state (&key (place *state*) (file +db-state+) (force '()))
   (bordeaux-threads:with-lock-held (*biglock*)
-    (when (dirty place)
+    (when (or force (dirty place))
       (setf (dirty place) '())
       (cl-store:store place file))))
 
