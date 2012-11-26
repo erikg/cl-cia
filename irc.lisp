@@ -11,6 +11,7 @@
 (defvar *notice-lock* (bordeaux-threads:make-lock "ircbot-notice-lock"))
 
 (defun find-connection-by-name (name)
+  (declare (ignore name))
   *connection*)
 (defun find-network-by-connection (conn)
   "freenode")
@@ -144,7 +145,7 @@
   '())
 
 (defun bot (&key (nick +bot-nick+) (ident +bot-ident+) (server +bot-server+) (channels +bot-channels+) (realname +bot-realname+) (nickserv-passwd +bot-nickserv-passwd+))
-  (setf (find-connection-by-name "freenode") (cl-irc:connect :username ident :realname realname :server server :nickname nick))
+  (setf *connection* (cl-irc:connect :username ident :realname realname :server server :nickname nick))
   (cl-irc:add-hook (find-connection-by-name "freenode") 'irc::irc-privmsg-message 'msg-hook)
   (cl-irc:add-hook (find-connection-by-name "freenode") 'irc::irc-notice-message 'notice-hook)
   (cl-irc:add-hook (find-connection-by-name "freenode") 'irc::ctcp-action-message 'action-hook)
