@@ -54,37 +54,37 @@
 (defun load-commit-from-mail-message (mailfile)
   (multiple-value-bind (header body)
       (flob mailfile)
-    (alexandria:when-let ((list-id (mail-element "List-Id" header))
-			  ;; favor the body Date node, but fall back to header if needed
-			  (date (datify (or (mail-element "Date" body) (mail-element "Date" header))))
-			  (revision (or (mail-element "Revision" body) (mail-element "New Revision" body)))
-			  (author (mail-element "Author" body))
-			  ;; this probably needs more work
-			  (files t)
-			  ;; the actual commit log message
-			  (log (or (mail-element "Log" body) (mail-element "Log Message" body)))
-			  (project t) ;can't be nil or when-let fails
-			  )
-      (setf files (mail-element "Modified Paths" body))
-      (unless files
-	(setf files (alexandria:flatten (or
-					 (mail-element "Modified" body)
-					 (mail-element "Added" body)
-					 (mail-element "Deleted" body)))))
-      ;; SVN::Notify likes to shove "-----" lines in, so try to eat those
-      (when (and (listp log) (cl-ppcre:scan "^-*$" (car log)) (pop log)))
-      (when (and (listp files) (cl-ppcre:scan "^-*$" (car files))) (pop files))
-      (setf project (find-project-by-list-id
-		     (let ((list-id (mail-element "List-Id" header)))
-		       (if (listp list-id)
-			   (format nil "~{~a~}" list-id)
-			   list-id))))
-      (unless (eq (type-of files) 'list) (setf files (list files)))
-      (when (listp revision) (setf revision (car revision)))
-      (when (and project revision author)
-	(values
-	 (make-instance 'commit :files files :revision revision :date date :user author :message log)
-	 project)))))
+    (let ((list-id (mail-element "List-Id" header))
+	  ;; favor the body Date node, but fall back to header if needed
+	  (date (datify (or (mail-element "Date" body) (mail-element "Date" header))))
+	  (revision (or (mail-element "Revision" body) (mail-element "New Revision" body)))
+	  (author (mail-element "Author" body))
+	  ;; the actual commit log message
+	  (log (or (mail-element "Log" body) (mail-element "Log Message" body)))
+	  (files (or (mail-element "Modified Paths" body) (alexandria:flatten
+							   (list
+							    (mail-element "Modified" body)
+							    (mail-element "Added" body)
+							    (mail-element "Deleted" body)))))
+	  (project '())
+	  (url '()))
+      (when (and list-id date revision author log)
+	;; SVN::Notify likes to shove "-----" lines in, so try to eat those
+	(when (and (listp log) (cl-ppcre:scan "^-*$" (car log)) (pop log)))
+	(when (and (listp files) (cl-ppcre:scan "^-*$" (car files))) (pop files))
+	(setf project (find-project-by-list-id
+		       (let ((list-id (mail-element "List-Id" header)))
+			 (if (listp list-id)
+			     (format nil "~{~a~}" list-id)
+			     list-id))))
+	(when (listp revision)
+	  (when (or (string-equal "http://" (subseq (cadr revision) 0 7)) (string-equal "https://" (subseq (cadr revision) 0 8)))
+	    (setf url (cadr revision)))
+	  (setf revision (car revision)))
+	(when (and project revision author)
+	  (values
+	   (make-instance 'commit :files files :revision revision :date date :user author :url url :message log)
+	   project))))))
 
 (defun process-mail-dir (&key (maildir +db-unprocessed-mail-dir+) (hooks '()))
   "Parse all messages in a mail dir, adding parsed commit messages to the list and applying the hooks"
