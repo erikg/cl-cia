@@ -88,6 +88,7 @@
    (user :accessor user :initarg :user)
    (revision :accessor revision :initarg :revision)
    (files :accessor files :initarg :files :initform '())
+   (url :accessor url :initarg :url :initform '())
    (message :accessor message :initarg :message :initform '())))
 
 (defmethod print-object ((c commit) stream)
