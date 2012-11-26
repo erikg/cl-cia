@@ -1,28 +1,6 @@
 
 (in-package :cl-cia)
 
-#|
-
-<message> 
-  <generator>
-    <name>CIA Trac plugin</name>
-    <version>0.1</version>
-  </generator>
-  <source>
-    <project>%s</project>
-    <module>%s</module>
-  </source>
-  <body>
-    <commit>
-      <revision>%s</revision>
-      <author>%s</author>
-      <log>%s</log>
-    </commit>
-  </body>
-</message>
-
-|#
-
 (defun gettags (xml tag)
   (let ((e (find-if (lambda (x) (or (and (symbolp x) (eq tag x)) (and (listp x) (symbolp (car x)) (eq (car x) tag)))) xml)))
     (when e (cdr e))))
@@ -37,20 +15,26 @@
 	     (timestamp (parse-integer (gettag p :|timestamp|)))
 	     (body (gettags p :|body|)))
 	(mapcar (lambda (c)
-	  (let ((author (gettag c :|author|))
-		(rev (gettag c :|revision|))
-		(log (gettag c :|log|))
-		(files (gettags c :|files|)))
-	    (list
-			    proj
-			    branch
-	     (make-instance 'commit
-			    :user author
-			    :revision rev
-			    :date (local-time:unix-to-timestamp timestamp)
-			    :files (mapcar (lambda (file) (string-trim " \t" (cadr file))) files)
-			    :message log))))
-	  body)))))
+		  (let ((author (gettag c :|author|))
+			(rev (gettag c :|revision|))
+			(log (gettag c :|log|))
+			(url (gettag c :|url|))
+			(files (gettags c :|files|)))
+		    (when (and url log
+			       (> (length log) (+ (length url) 3))
+			       (string= (concatenate 'string " - " url) (subseq log (- (length log) (length url) 3))))
+		      (setf log (subseq log 0 (- (length log) (length url) 3))))
+		    (list
+		     proj
+		     branch
+		     (make-instance 'commit
+				    :user author
+				    :revision rev
+				    :date (local-time:unix-to-timestamp timestamp)
+				    :files (mapcar (lambda (file) (string-trim " \t" (cadr file))) files)
+				    :url url
+				    :message log))))
+		body)))))
 
 (defun xmlrpc (str)
   (when str
