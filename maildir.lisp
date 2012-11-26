@@ -67,7 +67,7 @@
 							    (mail-element "Added" body)
 							    (mail-element "Deleted" body)))))
 	  (project '())
-	  (url '()))
+	  (url (mail-element "URL" body)))
       (when (and list-id date revision author log)
 	;; SVN::Notify likes to shove "-----" lines in, so try to eat those
 	(when (and (listp log) (cl-ppcre:scan "^-*$" (car log)) (pop log)))
@@ -78,8 +78,9 @@
 			     (format nil "~{~a~}" list-id)
 			     list-id))))
 	(when (listp revision)
-	  (when (or (string-equal "http://" (subseq (cadr revision) 0 7)) (string-equal "https://" (subseq (cadr revision) 0 8)))
-	    (setf url (cadr revision)))
+	  (unless url
+	    (when (or (string-equal "http://" (subseq (cadr revision) 0 7)) (string-equal "https://" (subseq (cadr revision) 0 8)))
+	      (setf url (cadr revision))))
 	  (setf revision (car revision)))
 	(when (and project revision author)
 	  (values
