@@ -41,12 +41,14 @@
 			   (nthcdr (+ nextargline 1) lines)
 			   (cdr lines)))))))))
 
-(defun flob (&optional (mailfile #P"/home/erik/db/cia/mail2/new/1353538242.48694_2.crit.brlcad.org"))
-  (alexandria:when-let ((lines (read-file-to-list mailfile)))
+(defun split-mail-to-head-and-body (file)
+  (alexandria:when-let ((lines (read-file-to-list file)))
     (alexandria:when-let ((p (position-if (lambda (x) (string= "" x)) lines)))
-      (alexandria:when-let ((header (fieldinate (subseq lines 0 p)))
-			    (body (fieldinate (subseq lines (+ p 1)))))
-	(values header body)))))
+      (cons (subseq lines 0 p) (subseq lines (+ p 1))))))
+
+(defun flob (mailfile)
+  (let ((l (split-mail-to-head-and-body mailfile)))
+    (values (fieldinate (car l)) (fieldinate (cdr l)))))
 
 (defun mail-element (name set)
   (let ((l (remove "" (mapcar (lambda (x) (string-trim " " x)) (cdr (assoc name set :test #'string=))) :test #'string=)))
@@ -95,10 +97,26 @@
 	(when (add-message project message)
 	  (let ((res (if hooks (mapcar (lambda (x) (funcall x message)) hooks) '(t))))
 	    (unless (find nil res)
-	      (rename-file file (merge-pathnames +db-processed-mail-dir+ (file-namestring file)))))))))
-  (save-state))
+	      (rename-file file (merge-pathnames +db-processed-mail-dir+ (file-namestring file))))))))))
 
-(defun pump ()  (process-mail-dir))
+(defun process-xml-mail-dir (&key (maildir +db-unprocessed-xmlmail-dir+) (hooks '()))
+  "Parse all messages in a mail dir, adding parsed commit messages to the list and applying the hooks"
+  (bordeaux-threads:with-lock-held (*biglock*)
+    (dolist (file (cl-fad:list-directory maildir))
+      (let* ((l (split-mail-to-head-and-body file))
+	     (body (cdr l)))
+	(dolist (xml (parsexml (format nil "~{~a~}" body)))
+	  (let ((project (find-project (car xml)))
+		(message (caddr xml)))
+	    (when (and (string-equal (car xml) "BRL-CAD")
+		       (string-equal (cadr xml) "http://brlcad.org"))
+	      (setf project (find-project "brl-cad wiki")))
+	    (when (add-message project message)
+	      (let ((res (if hooks (mapcar (lambda (x) (funcall x message)) hooks) '(t))))
+		(unless (find nil res)
+		  (rename-file file (merge-pathnames +db-processed-xmlmail-dir+ (file-namestring file))))))))))))
+
+(defun pump () (process-mail-dir) (process-xml-mail-dir) (save-state))
 (defvar *pump* '())
 (defvar *pump-running* '())
 (defun start-pump ()
