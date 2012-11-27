@@ -183,7 +183,8 @@
     (sort bucket (lambda (x y) (> (cadr x) (cadr y))))))
 
 (defun start ()
-  (setf *state* (load-state))
+  (unless *state*
+    (setf *state* (load-state)))
   (setf *message-hooks* (list #'report-commit))
   (start-pump)
   (bot)
@@ -193,3 +194,5 @@
   (stop-bot)
   (stop-pump)
   (save-state))
+
+(unless *state* (setf *state* (load-state)))
