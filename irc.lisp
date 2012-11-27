@@ -114,6 +114,7 @@
       (month (respond msg (report-commit-frequency-for-irc proj 1 :month)))
       (year (respond msg (report-commit-frequency-for-irc proj 1 :year)))
       (all (respond msg (format nil "~{~{~a:~a~}~^, ~}" (count-commits-by-user-since (commits proj) (local-time:universal-to-timestamp 0)))))
+      (ask (respond msg "Questions in the channel should be specific, informative, complete, concise, and on-topic.  Don't ask if you can ask a question first.  Don't ask if a person is there; just ask what you intended to ask them.  Better questions more frequently yield better answers.  We are all here voluntarily or against our will."))
       (todo (Push (list (irc::user msg) (car (irc::arguments msg)) (string-trim " " (subseq cmdstr (length cmd)))) (todo *state*)) (respond msg "OK")))))
 
 (defun msg-hook (msg)
