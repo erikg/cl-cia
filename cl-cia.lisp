@@ -33,6 +33,10 @@
 (prop +db-unprocessed-mail-dir+ (merge-pathnames "new/" +db-mail-dir+))
 (prop +db-processed-mail-dir+ (merge-pathnames "cur/" +db-mail-dir+))
 
+(prop +db-xmlmail-dir+ (merge-pathnames "xmlmail/" +db-dir+))
+(prop +db-unprocessed-xmlmail-dir+ (merge-pathnames "new/" +db-xmlmail-dir+))
+(prop +db-processed-xmlmail-dir+ (merge-pathnames "cur/" +db-xmlmail-dir+))
+
 (prop +bot-nick+ "Notify")
 (prop +bot-nickserv-passwd+ '())
 (prop +bot-server+ "irc.freenode.net")
