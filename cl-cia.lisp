@@ -149,7 +149,7 @@
 
 (defun resort-commits (project)
   (bordeaux-threads:with-lock-held (*biglock*)
-    (setf (commits project) (sort (commits project) (lambda (x y) (> (revision x) (revision y))))))
+    (setf (commits project) (sort (copy-list (commits project)) (lambda (x y) (string> (revision x) (revision y))))))
   t)
 
 (defun remove-commit (project commit &key (test #'equals))
