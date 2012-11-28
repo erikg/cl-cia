@@ -14,6 +14,7 @@
   (declare (ignore name))
   *connection*)
 (defun find-network-by-connection (conn)
+  (declare (ignore conn))
   "freenode")
 
 (defun filestr (files)
@@ -54,6 +55,11 @@
     (if (<= (length bits) 3)
 	bits
 	(list (car bits) (cadr bits) (concatenate 'string (caddr bits) "...")))))
+
+(defun post-message (channel msg &optional (network "freenode"))
+  (bordeaux-threads:with-lock-held (*notice-lock*)
+    (dolist (m (split-for-irc msg))
+      (post (list network channel m) (notices *state*)))))
 
 (defun report-msg (project msg)
   (bordeaux-threads:with-lock-held (*notice-lock*)
