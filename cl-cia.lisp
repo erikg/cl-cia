@@ -160,12 +160,20 @@
 (defun message-seen (project message)
   (when (and project message)
     (find message (commits project) :test #'equals)))
-(defun add-message (project message)
-  (when (and project message)
-    (unless (message-seen project message)
-      (dolist (hook (hooks project)) (funcall hook project message))
-      (setf (dirty *state*) t)
-      (push message (commits project)))))
+(defun add-messages (project messages)
+  (when (and project messages)
+    (not
+     (position
+      '()
+      (mapcar
+       (lambda (message)
+	 (unless (message-seen project message)
+	   (dolist (hook (hooks project)) (funcall hook project message))
+	   (setf (dirty *state*) t)
+	   (push message (commits project))
+	   t))
+       (if (listp messages) messages (list messages)))))))
+(defun add-message (project message) (add-messages project (list message)))
 
 (defun in-the-last (commits &optional start end)
   (unless start (setf start (local-time:timestamp- (local-time:now) 24 :hour)))
