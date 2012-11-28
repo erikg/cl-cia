@@ -3,8 +3,8 @@
 
 (defun gettags (xml tag)
   (let ((e (find-if (lambda (x) (or (and (symbolp x) (eq tag x)) (and (listp x) (symbolp (car x)) (eq (car x) tag)))) xml)))
-    (when e (cdr e))))
-(defun gettag (xml tag) (car (gettags xml tag)))
+    (when (and e (listp e)) (cdr e))))
+(defun gettag (xml tag) (let ((tags (gettags xml tag))) (when tags (car tags))))
 
 (defun parsexml (str)
   (alexandria:when-let ((p (s-xml:parse-xml-string str)))
