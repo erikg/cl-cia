@@ -16,8 +16,19 @@
 	(local-time::invalid-timestring () (local-time:now)))
       (local-time:now)))
 
+(defparameter +funny-field-names+ '("Added Paths"
+				    "Directory Properties"
+				    "Log Message"
+				    "Modified Paths"
+				    "New Revision"
+				    "Property changes on"
+				    "Removed Paths"
+				    "Revision Links"))
+
 (defun isarg (line)
-  (when line (cl-ppcre:scan "^[A-Z][^:]*:" line)))
+  (when line
+    (or (cl-ppcre:scan "^[A-Z][A-Za-z0-9-_]*:" line)
+	(find (subseq line 0 (position #\: line)) +funny-field-names+ :test #'string=))))
 
 (defun trimmulti (lines offset)
   ""
