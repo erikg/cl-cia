@@ -27,8 +27,11 @@
 
 (defun isarg (line)
   (when line
-    (or (cl-ppcre:scan "^[A-Z][A-Za-z0-9-_]*:" line)
-	(find (subseq line 0 (position #\: line)) +funny-field-names+ :test #'string=))))
+    (multiple-value-bind (start end) (cl-ppcre:scan "^[A-Z][A-Za-z0-9-_]*:" line)
+      (if start (values start end)
+	  (let ((match (find (subseq line 0 (position #\: line)) +funny-field-names+ :test #'string=)))
+	    (when match
+	      (values 0 (+ (length match) 1))))))))
 
 (defun trimmulti (lines offset)
   ""
