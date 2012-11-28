@@ -40,7 +40,7 @@
 (prop +bot-nick+ "Notify")
 (prop +bot-nickserv-passwd+ '())
 (prop +bot-server+ "irc.freenode.net")
-(prop +bot-realname+ "Commit Notification Bot - http://elfga.com/cia")
+(prop +bot-realname+ "Commit Notification Bot - http://elfga.com/notify")
 (prop +bot-ident+ "notify")
 (prop +bot-channels+ '("#notify" "##notify"))
 
