@@ -67,9 +67,9 @@
 (defun mail-element (name set)
   (let ((l (remove "" (mapcar (lambda (x) (string-trim " " x)) (cdr (assoc name set :test #'string=))) :test #'string=)))
     (if (cdr l) l (car l))))
-(defun load-commit-from-mail-message (mailfile)
-  (multiple-value-bind (header body)
-      (flob mailfile)
+(defun load-commit-from-mail-message (raw-header raw-body)
+  (let ((header (fieldinate raw-header))
+	(body (fieldinate raw-body)))
     (let ((list-id (mail-element "List-Id" header))
 	  ;; favor the body Date node, but fall back to header if needed
 	  (date (datify (or (mail-element "Date" body) (mail-element "Date" header))))
@@ -103,32 +103,35 @@
 	   (make-instance 'commit :files files :revision revision :date date :user author :url url :message log)
 	   project))))))
 
-(defun process-mail-dir (&key (maildir +db-unprocessed-mail-dir+) (hooks '()))
-  "Parse all messages in a mail dir, adding parsed commit messages to the list and applying the hooks"
+(defun process-mail-dir-abstract (func maildir processed-maildir hooks)
   (bordeaux-threads:with-lock-held (*biglock*)
     (dolist (file (cl-fad:list-directory maildir))
-      (multiple-value-bind (message project) (load-commit-from-mail-message file)
+      (multiple-value-bind (message project) (apply func (let ((l (split-mail-to-head-and-body file))) (list (car l) (cdr l))))
 	(when (add-message project message)
 	  (let ((res (if hooks (mapcar (lambda (x) (funcall x message)) hooks) '(t))))
 	    (unless (find nil res)
-	      (rename-file file (merge-pathnames +db-processed-mail-dir+ (file-namestring file))))))))))
+	      (rename-file file (merge-pathnames processed-maildir (file-namestring file))))))))))
 
-(defun process-xml-mail-dir (&key (maildir +db-unprocessed-xmlmail-dir+) (hooks '()))
+(defun process-mail-dir (&key (maildir +db-unprocessed-mail-dir+) (processed-maildir +db-processed-mail-dir+) (hooks '()))
   "Parse all messages in a mail dir, adding parsed commit messages to the list and applying the hooks"
-  (bordeaux-threads:with-lock-held (*biglock*)
-    (dolist (file (cl-fad:list-directory maildir))
-      (let* ((l (split-mail-to-head-and-body file))
-	     (body (cdr l)))
-	(dolist (xml (parsexml (format nil "~{~a~}" body)))
-	  (let ((project (find-project (car xml)))
-		(message (caddr xml)))
-	    (when (and (string-equal (car xml) "BRL-CAD")
-		       (string-equal (cadr xml) "http://brlcad.org"))
-	      (setf project (find-project "brl-cad wiki")))
-	    (when (add-message project message)
-	      (let ((res (if hooks (mapcar (lambda (x) (funcall x message)) hooks) '(t))))
-		(unless (find nil res)
-		  (rename-file file (merge-pathnames +db-processed-xmlmail-dir+ (file-namestring file))))))))))))
+  (process-mail-dir-abstract #'load-commit-from-mail-message maildir processed-maildir hooks))
+
+(defun process-xml-mail-dir (&key (maildir +db-unprocessed-xmlmail-dir+) (processed-maildir +db-processed-xmlmail-dir+) (hooks '()))
+  "Parse all messages in a mail dir, adding parsed commit messages to the list and applying the hooks"
+  (process-mail-dir-abstract
+   (lambda (header body)
+     (declare (ignore header))
+     (let ((messages '())
+	   (project '()))
+       (dolist (xml (parsexml (format nil "~{~a~}" body)))
+	 (let ((message (caddr xml)))
+	   (unless project (setf project (find-project (car xml))))
+	   (when (and (string-equal (car xml) "BRL-CAD")
+		      (string-equal (cadr xml) "http://brlcad.org"))
+	     (setf project (find-project "brl-cad wiki")))
+	   (push message messages)))
+       (values messages project)))
+   maildir processed-maildir hooks))
 
 (defun pump () (process-mail-dir) (process-xml-mail-dir) (save-state))
 (defvar *pump* '())
