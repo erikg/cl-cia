@@ -41,7 +41,7 @@
     (let ((res (parsexml str)))
       (dolist (r res)
 	(alexandria:when-let ((proj (find-project (car r))))
-	  (add-message proj (caddr r)))))))
+	  (add-message (caddr r) proj))))))
 
 (defun parse-svn-logentry (xml &key user-map-func)
   (unless user-map-func (setf user-map-func (lambda (name) name)))
