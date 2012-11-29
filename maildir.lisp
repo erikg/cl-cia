@@ -3,7 +3,7 @@
 (in-package #:cl-cia)
 
 (defun read-file-to-list (file)
-  (with-open-file (stream file)
+  (with-open-file (stream file :external-format :utf-8)
     (loop for line = (read-line stream nil)
        while line collect line)))
 
@@ -67,7 +67,7 @@
 (defun mail-element (name set)
   (let ((l (remove "" (mapcar (lambda (x) (string-trim " " x)) (cdr (assoc name set :test #'string=))) :test #'string=)))
     (if (cdr l) l (car l))))
-(defun load-commit-from-mail-message (raw-header raw-body)
+(defun load-commit-from-mail-message (raw-header raw-body &optional hooks)
   (let ((header (fieldinate raw-header))
 	(body (fieldinate raw-body)))
     (let ((list-id (mail-element "List-Id" header))
@@ -99,41 +99,61 @@
 	      (setf url (cadr revision))))
 	  (setf revision (car revision)))
 	(when (and project revision author)
-	  (values
-	   (make-instance 'commit :files files :revision revision :date date :user author :url url :message log)
-	   project))))))
+	  (let ((commit (make-instance 'commit :files files :revision revision :date date :user author :url url :message log)))
+	    (dolist (h hooks) (unless (funcall h commit project) (return '())))
+	    (values commit project)))))))
 
 (defun process-mail-dir-abstract (func maildir processed-maildir hooks)
   (bordeaux-threads:with-lock-held (*biglock*)
     (dolist (file (cl-fad:list-directory maildir))
-      (multiple-value-bind (message project) (apply func (let ((l (split-mail-to-head-and-body file))) (list (car l) (cdr l))))
-	(when (add-message project message)
-	  (let ((res (if hooks (mapcar (lambda (x) (funcall x message)) hooks) '(t))))
-	    (unless (find nil res)
-	      (rename-file file (merge-pathnames processed-maildir (file-namestring file))))))))))
+      (let ((l (split-mail-to-head-and-body file)))
+	(when (funcall func (car l) (cdr l) hooks)
+	  (rename-file file (merge-pathnames processed-maildir (file-namestring file))))))))
 
 (defun process-mail-dir (&key (maildir +db-unprocessed-mail-dir+) (processed-maildir +db-processed-mail-dir+) (hooks '()))
   "Parse all messages in a mail dir, adding parsed commit messages to the list and applying the hooks"
-  (process-mail-dir-abstract #'load-commit-from-mail-message maildir processed-maildir hooks))
+  (process-mail-dir-abstract #'load-commit-from-mail-message maildir processed-maildir (if hooks hooks (list #'add-message))))
 
 (defun process-xml-mail-dir (&key (maildir +db-unprocessed-xmlmail-dir+) (processed-maildir +db-processed-xmlmail-dir+) (hooks '()))
   "Parse all messages in a mail dir, adding parsed commit messages to the list and applying the hooks"
   (process-mail-dir-abstract
    (lambda (header body hooks)
-     (declare (ignore header hooks))
-     (let ((messages '())
-	   (project '()))
-       (dolist (xml (parsexml (format nil "~{~a~}" body)))
-	 (let ((message (caddr xml)))
-	   (unless project (setf project (find-project (car xml))))
-	   (when (and (string-equal (car xml) "BRL-CAD")
-		      (string-equal (cadr xml) "http://brlcad.org"))
-	     (setf project (find-project "brl-cad wiki")))
-	   (push message messages)))
-       (values messages project)))
+     (declare (ignore header))
+     (dolist (xml (parsexml (format nil "~{~a~}" body)))
+       (let ((message (caddr xml))
+	     (project (find-project (car xml))))
+	 (when (and (string-equal (car xml) "BRL-CAD")
+		    (string-equal (cadr xml) "http://brlcad.org"))
+	   (setf project (find-project "brl-cad wiki")))
+	 (if hooks
+	     (not (position '() (mapcar (lambda (h) (funcall h message project)) hooks)))
+	     (add-message message project)))))
    maildir processed-maildir hooks))
 
-(defun pump () (process-mail-dir) (process-xml-mail-dir) (save-state))
+(defun match-fields (fields pairs)
+  ""
+  (not (position '() (mapcar (lambda (x) (string= (mail-element (car x) fields) (cadr x))) pairs))))
+(defun do-gci-email (header-fields body hooks)
+  (declare (ignore hooks header-fields))
+  (setf body (mapcar (lambda (x) (string-trim " " x)) (nthcdr 9 body)))
+  (post-message "#brlcad"
+		(truncate-for-irc (format nil "~a: ~{~a~^ ~}~%" (ascii-ize "GCI" 3)
+					  (remove "" (subseq body 0 (position-if (lambda (x) (string= "Greetings," x)) body)))))))
+(defun process-brlcad-gci-email (header body hooks)
+  (let ((header-fields (fieldinate header)))
+    (cond
+      ((match-fields header-fields '(("X-Google-Appengine-App-Id" "s~google-melange")
+				     ("List-Id" "BRL-CAD Tracker Mailing List <brlcad-tracker.lists.sourceforge.net>")
+				     ("From" "no-reply@google-melange.appspotmail.com")))
+       (do-gci-email header-fields body hooks))
+      (t '()))))
+
+(defun process-brlcad-gci-mail-dir (&key (maildir #P"/home/erik/db/cia/unhandled-mail/new") (processed-maildir #P"/home/erik/db/cia/unhandled-mail/cur") (hooks '()))
+  (process-mail-dir-abstract #'process-brlcad-gci-email maildir processed-maildir hooks))
+(defun test-gci ()
+  (let ((l (split-mail-to-head-and-body #P"/home/erik/db/cia/unhandled-mail/new/1354120503.92902_3.crit.brlcad.org")))
+    (process-brlcad-gci-email (car l) (cdr l) '())))
+(defun pump () (process-mail-dir) (process-xml-mail-dir) (save-state) (process-brlcad-gci-mail-dir))
 (defvar *pump* '())
 (defvar *pump-running* '())
 (defun start-pump ()
