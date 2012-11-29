@@ -102,9 +102,10 @@
     (push (list (find-network-by-connection (irc::connection msg)) (car (irc::arguments msg)) str) (notices *state*))))
 
 (defun report-commit-frequency-for-irc (proj timeval timetype)
-  (if proj
-    (format nil "~{~{~a:~a~}~^, ~}" (count-commits-by-user-since (commits proj) (local-time:timestamp- (local-time:now) timeval timetype)))
-    "No project specified"))
+  (dolist (p (if (listp proj) proj (list proj)))
+    (format nil "~a: ~{~{~a:~a~}~^, ~}"
+	    (name proj)
+	    (count-commits-by-user-since (commits p) (local-time:timestamp- (local-time:now) timeval timetype)))))
 
 (defun docmd (msg cmdstr)
   (let* ((cmds (split-sequence:split-sequence #\Space cmdstr))

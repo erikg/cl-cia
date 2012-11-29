@@ -40,7 +40,7 @@
   (when str
     (let ((res (parsexml str)))
       (dolist (r res)
-	(alexandria:when-let ((proj (find-project (car r))))
+	(alexandria:when-let ((proj (car (find-project (car r)))))
 	  (add-message (caddr r) proj))))))
 
 (defun parse-svn-logentry (xml &key user-map-func)
