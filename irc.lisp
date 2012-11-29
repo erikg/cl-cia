@@ -9,6 +9,7 @@
 (defvar *notice-wrangler* '())
 (defvar *notice-wrangler-running* '())
 (defvar *notice-lock* (bordeaux-threads:make-lock "ircbot-notice-lock"))
+(defparameter +always-channels+ '("#notify"))
 
 (defun find-connection-by-name (name)
   (declare (ignore name))
@@ -64,11 +65,8 @@
 (defun report-msg (project msg)
   (bordeaux-threads:with-lock-held (*notice-lock*)
     (dolist (m (split-for-irc msg))
-      (post (list "freenode" "#notify" m) (notices *state*))
-      (post (list "freenode" "##notify" m) (notices *state*))
-      (when project
-	(dolist (c (channels project))
-	  (post (list "freenode" c m) (notices *state*)))))))
+      (dolist (target (append +always-channels+ (when project (channels project))))
+	(post (list "freenode" target m) (notices *state*))))))
 
 (defun report-commit (project message)
   (when (and project message)
