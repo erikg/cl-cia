@@ -60,7 +60,8 @@
 (defun post-message (channel msg &optional (network "freenode"))
   (bordeaux-threads:with-lock-held (*notice-lock*)
     (dolist (m (split-for-irc msg))
-      (post (list network channel m) (notices *state*)))))
+      (post (list network channel m) (notices *state*))))
+  t)
 
 (defun report-msg (project msg)
   (bordeaux-threads:with-lock-held (*notice-lock*)
