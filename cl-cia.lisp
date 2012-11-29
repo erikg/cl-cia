@@ -160,7 +160,7 @@
 (defun message-seen (project message)
   (when (and project message)
     (find message (commits project) :test #'equals)))
-(defun add-messages (project messages)
+(defun add-messages (messages project)
   (when (and project messages)
     (not
      (position
@@ -173,7 +173,7 @@
 	   (push message (commits project))
 	   t))
        (if (listp messages) messages (list messages)))))))
-(defun add-message (project message) (add-messages project (list message)))
+(defun add-message (message project) (add-messages (list message) project))
 
 (defun in-the-last (commits &optional start end)
   (unless start (setf start (local-time:timestamp- (local-time:now) 24 :hour)))
