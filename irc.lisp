@@ -97,15 +97,17 @@
   (setf *notice-wrangler-running* '())
   (bordeaux-threads:join-thread *notice-wrangler*))
 
-(defun respond (msg str)
+(defun respond (msg strl)
   (bordeaux-threads:with-lock-held (*notice-lock*)
-    (push (list (find-network-by-connection (irc::connection msg)) (car (irc::arguments msg)) str) (notices *state*))))
+    (dolist (str (if (listp strl) strl (list strl)))
+      (push (list (find-network-by-connection (irc::connection msg)) (car (irc::arguments msg)) str) (notices *state*)))))
 
 (defun report-commit-frequency-for-irc (proj timeval timetype)
-  (dolist (p (if (listp proj) proj (list proj)))
-    (format nil "~a: ~{~{~a:~a~}~^, ~}"
-	    (name proj)
-	    (count-commits-by-user-since (commits p) (local-time:timestamp- (local-time:now) timeval timetype)))))
+  (mapcar (lambda (p)
+	    (format nil "~a: ~{~{~a:~a~}~^, ~}"
+		    (name p)
+		    (count-commits-by-user-since (commits p) (local-time:timestamp- (local-time:now) timeval timetype))))
+	  (if (listp proj) proj (list proj))))
 
 (defun docmd (msg cmdstr)
   (let* ((cmds (split-sequence:split-sequence #\Space cmdstr))
