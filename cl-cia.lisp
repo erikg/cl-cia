@@ -114,11 +114,13 @@
 (defun add-project (project)
   (push project (projects *state*)))
 (defmethod find-project ((name t) &optional (state *state*))
-  (find-if (lambda (x)
-	     (or
-	      (string-equal (name x) name)
-	      (find name (channels x) :test #'string-equal)))
-	   (projects state)))
+  (remove nil (mapcar (lambda (x)
+			(when
+			    (or
+			     (string-equal (name x) name)
+			     (find name (channels x) :test #'string-equal))
+			  x))
+	  (projects state))))
 (defun find-project-by-list-id (list-id)
   (find-if (lambda (x)
 	     (when (list-id-regex x)
@@ -138,7 +140,9 @@
 (defmethod print-object ((c commit) stream)
   (format stream "#<Commit: ~a@~a: ~a (at ~a)>" (user c) (revision c) (message c) (date c)))
 (defmethod equals ((c1 commit) (c2 commit))
-  (and (string-equal (user c1) (user c2)) (string-equal (revision c1) (revision c2))))
+  (and (string-equal (user c1) (user c2))
+       (string-equal (revision c1) (revision c2))
+       (string-equal (message c1) (message c2))))
 
 (defmethod find-commit ((p project) rev)
   (find-if (lambda (x) (string-equal (revision x) rev)) (commits p)))
