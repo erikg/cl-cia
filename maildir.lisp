@@ -119,8 +119,8 @@
 (defun process-xml-mail-dir (&key (maildir +db-unprocessed-xmlmail-dir+) (processed-maildir +db-processed-xmlmail-dir+) (hooks '()))
   "Parse all messages in a mail dir, adding parsed commit messages to the list and applying the hooks"
   (process-mail-dir-abstract
-   (lambda (header body)
-     (declare (ignore header))
+   (lambda (header body hooks)
+     (declare (ignore header hooks))
      (let ((messages '())
 	   (project '()))
        (dolist (xml (parsexml (format nil "~{~a~}" body)))
