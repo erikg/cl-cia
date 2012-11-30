@@ -152,7 +152,7 @@
        (do-gci-email header-fields body hooks))
       (t '()))))
 
-(defun process-brlcad-gci-mail-dir (&key (maildir #P"/home/erik/db/cia/unhandled-mail/new") (processed-maildir #P"/home/erik/db/cia/unhandled-mail/cur") (hooks '()))
+(defun process-brlcad-gci-mail-dir (&key (maildir #P"/home/erik/db/cia/unhandled-mail/new/") (processed-maildir #P"/home/erik/db/cia/unhandled-mail/cur/") (hooks '()))
   (process-mail-dir-abstract #'process-brlcad-gci-email maildir processed-maildir hooks))
 (defun test-gci ()
   (let ((l (split-mail-to-head-and-body #P"/home/erik/db/cia/unhandled-mail/new/1354120503.92902_3.crit.brlcad.org")))
