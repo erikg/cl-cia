@@ -39,7 +39,7 @@
 
 (defun truncate-for-irc (msg &optional (len +irc-line-length+))
   (let ((m (substitute #\Space #\Newline msg)))
-    (if (< (length m) len)
+    (if (<= (length m) len)
 	m
 	(loop for i from len downto 0
 	   until (eq (char m i) #\Space)
