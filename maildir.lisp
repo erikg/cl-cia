@@ -142,7 +142,7 @@
   (setf body (mapcar (lambda (x) (string-trim " " x)) (nthcdr 9 body)))
   (post-message "#brlcad"
 		(truncate-for-irc (format nil "~a: ~{~a~^ ~}~%" (ascii-ize "GCI" 3)
-					  (remove "" (subseq body 0 (position-if (lambda (x) (string= "Greetings," x)) body)))))))
+					  (remove "" (subseq body 0 (position-if (lambda (x) (string= "Greetings," x)) body)))) 400)))
 (defun process-brlcad-gci-email (header body hooks)
   (let ((header-fields (fieldinate header)))
     (cond
