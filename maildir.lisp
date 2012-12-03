@@ -137,12 +137,19 @@
 (defun match-fields (fields pairs)
   ""
   (not (position '() (mapcar (lambda (x) (string= (mail-element (car x) fields) (cadr x))) pairs))))
+(defmacro blip (index) `(string-trim " " (subseq body (aref r1 ,index) (aref r2 ,index))))
 (defun do-gci-email (header-fields body hooks)
   (declare (ignore hooks header-fields))
-  (setf body (mapcar (lambda (x) (string-trim " " x)) (nthcdr 9 body)))
-  (post-message "#brlcad"
-		(truncate-for-irc (format nil "~a: ~{~a~^ ~}~%" (ascii-ize "GCI" 3)
-					  (remove "" (subseq body 0 (position-if (lambda (x) (string= "Greetings," x)) body)))) 400)))
+  (setf body (nthcdr 9 body))
+  (setf body (format nil "~{~a~^ ~}" (mapcar (lambda (x) (string-trim " " x)) (subseq body 0 (position-if (lambda (x) (when (> (length x) 2) (string= (subseq x 0 2) "--"))) body)))))
+  (multiple-value-bind (start end r1 r2) (cl-ppcre:scan "^[ ]*\(.*\) has left the following comment at \(.*\)[ \t]*\(http://www.google-melange.com/gci/task/view/google/gci2012/[0-9]*\):[ \t]*\(.*\)[ \t]*Greetings, The Google Open Source Programs Team.*$" body)
+    (when (and start (= (length body) end))
+      (format t "~a < ~a >~%"
+	      (truncate-for-irc
+	       (format nil "~a: ~a: ~a - ~a" (ascii-ize "GCI" 2) (blip 0) (blip 1) (blip 3))
+	       (- +irc-line-length+ (- (aref r2 2) (aref r1 2)) 6))
+	      (blip 2))))
+  '())
 (defun process-brlcad-gci-email (header body hooks)
   (let ((header-fields (fieldinate header)))
     (cond
@@ -152,7 +159,10 @@
        (do-gci-email header-fields body hooks))
       (t '()))))
 
-(defun process-brlcad-gci-mail-dir (&key (maildir #P"/home/erik/db/cia/unhandled-mail/new/") (processed-maildir #P"/home/erik/db/cia/unhandled-mail/cur/") (hooks '()))
+(defun process-brlcad-gci-mail-dir (&key
+				      (maildir (merge-pathnames "unhandled-mail/new/" +db-dir+))
+				      (processed-maildir (merge-pathnames "unhandled-mail/cur/" +db-dir+))
+				      (hooks '()))
   (process-mail-dir-abstract #'process-brlcad-gci-email maildir processed-maildir hooks))
 (defun test-gci ()
   (let ((l (split-mail-to-head-and-body #P"/home/erik/db/cia/unhandled-mail/new/1354120503.92902_3.crit.brlcad.org")))
