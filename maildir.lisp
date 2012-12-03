@@ -144,12 +144,12 @@
   (setf body (format nil "~{~a~^ ~}" (mapcar (lambda (x) (string-trim " " x)) (subseq body 0 (position-if (lambda (x) (when (> (length x) 2) (string= (subseq x 0 2) "--"))) body)))))
   (multiple-value-bind (start end r1 r2) (cl-ppcre:scan "^[ ]*\(.*\) has left the following comment at \(.*\)[ \t]*\(http://www.google-melange.com/gci/task/view/google/gci2012/[0-9]*\):[ \t]*\(.*\)[ \t]*Greetings, The Google Open Source Programs Team.*$" body)
     (when (and start (= (length body) end))
-      (format t "~a < ~a >~%"
-	      (truncate-for-irc
-	       (format nil "~a: ~a: ~a - ~a" (ascii-ize "GCI" 2) (blip 0) (blip 1) (blip 3))
-	       (- +irc-line-length+ (- (aref r2 2) (aref r1 2)) 6))
-	      (blip 2))))
-  '())
+      (post-message "#brlcad"
+		    (format nil "~a < ~a >~%"
+			    (truncate-for-irc
+			     (format nil "~a: ~a: ~a - ~a" (ascii-ize "GCI" 3) (blip 0) (blip 1) (blip 3))
+			     (- +irc-line-length+ (- (aref r2 2) (aref r1 2)) 6))
+			    (blip 2))))))
 (defun process-brlcad-gci-email (header body hooks)
   (let ((header-fields (fieldinate header)))
     (cond
