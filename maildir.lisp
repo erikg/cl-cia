@@ -98,6 +98,8 @@
 	    (when (or (string-equal "http://" (subseq (cadr revision) 0 7)) (string-equal "https://" (subseq (cadr revision) 0 8)))
 	      (setf url (cadr revision))))
 	  (setf revision (car revision)))
+	(when (listp log)
+	  (setf log (format nil "~{~a~}" log)))
 	(when (and project revision author)
 	  (let ((commit (make-instance 'commit :files files :revision revision :date date :user author :url url :message log)))
 	    (dolist (h hooks) (unless (funcall h commit project) (return '())))
