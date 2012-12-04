@@ -142,7 +142,9 @@
 (defmethod equals ((c1 commit) (c2 commit))
   (and (string-equal (user c1) (user c2))
        (string-equal (revision c1) (revision c2))
-       (string-equal (message c1) (message c2))))
+       (or
+	(and (stringp c1) (stringp c2) (string-equal (message c1) (message c2)))
+	(eq c1 c2))))
 
 (defmethod find-commit ((p project) rev)
   (find-if (lambda (x) (string-equal (revision x) rev)) (commits p)))
@@ -153,7 +155,7 @@
 
 (defun resort-commits (project)
   (bordeaux-threads:with-lock-held (*biglock*)
-    (setf (commits project) (sort (copy-list (commits project)) (lambda (x y) (string> (revision x) (revision y))))))
+    (setf (commits project) (sort (copy-list (commits project)) (lambda (x y) (local-time:timestamp> (date x) (date y))))))
   t)
 
 (defun remove-commit (project commit &key (test #'equals))
@@ -171,6 +173,8 @@
       '()
       (mapcar
        (lambda (message)
+	 (when (listp (message message))
+	   (setf (message message) (format nil "~{~a~}" (message message))))
 	 (unless (message-seen project message)
 	   (dolist (hook (hooks project)) (funcall hook project message))
 	   (setf (dirty *state*) t)
