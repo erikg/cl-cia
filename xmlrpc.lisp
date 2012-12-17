@@ -3,8 +3,8 @@
 
 (defun gettags (xml tag)
   (let ((e (find-if (lambda (x) (or (and (symbolp x) (eq tag x)) (and (listp x) (symbolp (car x)) (eq (car x) tag)))) xml)))
-    (when e (cdr e))))
-(defun gettag (xml tag) (car (gettags xml tag)))
+    (when (and e (listp e)) (cdr e))))
+(defun gettag (xml tag) (let ((tags (gettags xml tag))) (when tags (car tags))))
 
 (defun parsexml (str)
   (alexandria:when-let ((p (s-xml:parse-xml-string str)))
@@ -40,8 +40,8 @@
   (when str
     (let ((res (parsexml str)))
       (dolist (r res)
-	(alexandria:when-let ((proj (find-project (car r))))
-	  (add-message proj (caddr r)))))))
+	(alexandria:when-let ((proj (car (find-project (car r)))))
+	  (add-message (caddr r) proj))))))
 
 (defun parse-svn-logentry (xml &key user-map-func)
   (unless user-map-func (setf user-map-func (lambda (name) name)))

@@ -33,10 +33,14 @@
 (prop +db-unprocessed-mail-dir+ (merge-pathnames "new/" +db-mail-dir+))
 (prop +db-processed-mail-dir+ (merge-pathnames "cur/" +db-mail-dir+))
 
+(prop +db-xmlmail-dir+ (merge-pathnames "xmlmail/" +db-dir+))
+(prop +db-unprocessed-xmlmail-dir+ (merge-pathnames "new/" +db-xmlmail-dir+))
+(prop +db-processed-xmlmail-dir+ (merge-pathnames "cur/" +db-xmlmail-dir+))
+
 (prop +bot-nick+ "Notify")
 (prop +bot-nickserv-passwd+ '())
 (prop +bot-server+ "irc.freenode.net")
-(prop +bot-realname+ "Commit Notification Bot - http://elfga.com/cia")
+(prop +bot-realname+ "Commit Notification Bot - http://elfga.com/notify")
 (prop +bot-ident+ "notify")
 (prop +bot-channels+ '("#notify" "##notify"))
 
@@ -110,11 +114,13 @@
 (defun add-project (project)
   (push project (projects *state*)))
 (defmethod find-project ((name t) &optional (state *state*))
-  (find-if (lambda (x)
-	     (or
-	      (string-equal (name x) name)
-	      (find name (channels x) :test #'string-equal)))
-	   (projects state)))
+  (remove nil (mapcar (lambda (x)
+			(when
+			    (or
+			     (string-equal (name x) name)
+			     (find name (channels x) :test #'string-equal))
+			  x))
+	  (projects state))))
 (defun find-project-by-list-id (list-id)
   (find-if (lambda (x)
 	     (when (list-id-regex x)
@@ -134,7 +140,11 @@
 (defmethod print-object ((c commit) stream)
   (format stream "#<Commit: ~a@~a: ~a (at ~a)>" (user c) (revision c) (message c) (date c)))
 (defmethod equals ((c1 commit) (c2 commit))
-  (and (string-equal (user c1) (user c2)) (string-equal (revision c1) (revision c2))))
+  (and (string-equal (user c1) (user c2))
+       (string-equal (revision c1) (revision c2))
+       (or
+	(and (stringp c1) (stringp c2) (string-equal (message c1) (message c2)))
+	(eq c1 c2))))
 
 (defmethod find-commit ((p project) rev)
   (find-if (lambda (x) (string-equal (revision x) rev)) (commits p)))
@@ -145,7 +155,7 @@
 
 (defun resort-commits (project)
   (bordeaux-threads:with-lock-held (*biglock*)
-    (setf (commits project) (sort (commits project) (lambda (x y) (> (revision x) (revision y))))))
+    (setf (commits project) (sort (copy-list (commits project)) (lambda (x y) (local-time:timestamp> (date x) (date y))))))
   t)
 
 (defun remove-commit (project commit &key (test #'equals))
@@ -156,12 +166,22 @@
 (defun message-seen (project message)
   (when (and project message)
     (find message (commits project) :test #'equals)))
-(defun add-message (project message)
-  (when (and project message)
-    (unless (message-seen project message)
-      (dolist (hook (hooks project)) (funcall hook project message))
-      (setf (dirty *state*) t)
-      (push message (commits project)))))
+(defun add-messages (messages project)
+  (when (and project messages)
+    (not
+     (position
+      '()
+      (mapcar
+       (lambda (message)
+	 (when (listp (message message))
+	   (setf (message message) (format nil "~{~a~}" (message message))))
+	 (unless (message-seen project message)
+	   (dolist (hook (hooks project)) (funcall hook project message))
+	   (setf (dirty *state*) t)
+	   (push message (commits project))
+	   t))
+       (if (listp messages) messages (list messages)))))))
+(defun add-message (message project) (add-messages (list message) project))
 
 (defun in-the-last (commits &optional start end)
   (unless start (setf start (local-time:timestamp- (local-time:now) 24 :hour)))

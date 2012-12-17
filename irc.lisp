@@ -9,11 +9,13 @@
 (defvar *notice-wrangler* '())
 (defvar *notice-wrangler-running* '())
 (defvar *notice-lock* (bordeaux-threads:make-lock "ircbot-notice-lock"))
+(defparameter +always-channels+ '("#notify"))
 
 (defun find-connection-by-name (name)
   (declare (ignore name))
   *connection*)
 (defun find-network-by-connection (conn)
+  (declare (ignore conn))
   "freenode")
 
 (defun filestr (files)
@@ -37,7 +39,7 @@
 
 (defun truncate-for-irc (msg &optional (len +irc-line-length+))
   (let ((m (substitute #\Space #\Newline msg)))
-    (if (< (length m) len)
+    (if (<= (length m) len)
 	m
 	(loop for i from len downto 0
 	   until (eq (char m i) #\Space)
@@ -55,14 +57,17 @@
 	bits
 	(list (car bits) (cadr bits) (concatenate 'string (caddr bits) "...")))))
 
+(defun post-message (channel msg &optional (network "freenode"))
+  (bordeaux-threads:with-lock-held (*notice-lock*)
+    (dolist (m (split-for-irc msg))
+      (post (list network channel m) (notices *state*))))
+  t)
+
 (defun report-msg (project msg)
   (bordeaux-threads:with-lock-held (*notice-lock*)
     (dolist (m (split-for-irc msg))
-      (post (list "freenode" "#notify" m) (notices *state*))
-      (post (list "freenode" "##notify" m) (notices *state*))
-      (when project
-	(dolist (c (channels project))
-	  (post (list "freenode" c m) (notices *state*)))))))
+      (dolist (target (append +always-channels+ (when project (channels project))))
+	(post (list "freenode" target m) (notices *state*))))))
 
 (defun report-commit (project message)
   (when (and project message)
@@ -92,14 +97,17 @@
   (setf *notice-wrangler-running* '())
   (bordeaux-threads:join-thread *notice-wrangler*))
 
-(defun respond (msg str)
+(defun respond (msg strl)
   (bordeaux-threads:with-lock-held (*notice-lock*)
-    (push (list (find-network-by-connection (irc::connection msg)) (car (irc::arguments msg)) str) (notices *state*))))
+    (dolist (str (if (listp strl) strl (list strl)))
+      (push (list (find-network-by-connection (irc::connection msg)) (car (irc::arguments msg)) str) (notices *state*)))))
 
 (defun report-commit-frequency-for-irc (proj timeval timetype)
-  (if proj
-    (format nil "~{~{~a:~a~}~^, ~}" (count-commits-by-user-since (commits proj) (local-time:timestamp- (local-time:now) timeval timetype)))
-    "No project specified"))
+  (mapcar (lambda (p)
+	    (format nil "~a: ~{~{~a:~a~}~^, ~}"
+		    (name p)
+		    (count-commits-by-user-since (commits p) (local-time:timestamp- (local-time:now) timeval timetype))))
+	  (if (listp proj) proj (list proj))))
 
 (defun docmd (msg cmdstr)
   (let* ((cmds (split-sequence:split-sequence #\Space cmdstr))
@@ -114,6 +122,7 @@
       (month (respond msg (report-commit-frequency-for-irc proj 1 :month)))
       (year (respond msg (report-commit-frequency-for-irc proj 1 :year)))
       (all (respond msg (format nil "~{~{~a:~a~}~^, ~}" (count-commits-by-user-since (commits proj) (local-time:universal-to-timestamp 0)))))
+      (ask (respond msg "Questions in the channel should be specific, informative, complete, concise, and on-topic.  Don't ask if you can ask a question first.  Don't ask if a person is there; just ask what you intended to ask them.  Better questions more frequently yield better answers.  We are all here voluntarily or against our will."))
       (todo (Push (list (irc::user msg) (car (irc::arguments msg)) (string-trim " " (subseq cmdstr (length cmd)))) (todo *state*)) (respond msg "OK")))))
 
 (defun msg-hook (msg)
