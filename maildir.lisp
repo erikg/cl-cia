@@ -140,19 +140,11 @@
   ""
   (not (position '() (mapcar (lambda (x) (string= (mail-element (car x) fields) (cadr x))) pairs))))
 (defmacro blip (index) `(string-trim " " (subseq body (aref r1 ,index) (aref r2 ,index))))
-(defun parse-gci-output()
-  (setf id (car (cl-ppcre:all-matches-as-strings "(?<=gci2012/)[0-9]*(?=:)" body)))
-  (setf user (car (cl-ppcre:all-matches-as-strings ".*(?= has left)" body)))
-  (setf task (car (cl-ppcre:all-matches-as-strings "(?<=comment at ).*?(?= http)" body)))
-  (setf title (nth 8 (cl-ppcre:all-matches-as-strings ".*" body)))
-  (setf content (nth 11 (cl-ppcre:all-matches-as-strings ".*" body)))
-  (concatenate 'string user " * " id " "  task ": " title " - " content))
 (defun do-gci-email (header-fields body hooks)
   (declare (ignore hooks header-fields))
   (setf body (nthcdr 9 body))
   (setf body (format nil "~{~a~^ ~}" (mapcar (lambda (x) (string-trim " " x)) (subseq body 0 (position-if (lambda (x) (when (> (length x) 2) (string= (subseq x 0 2) "--"))) body)))))
-  (setf body parse-gci-output)
-  (multiple-value-bind (start end r1 r2) (cl-ppcre:scan".*" body)
+  (multiple-value-bind (start end r1 r2) (cl-ppcre:scan "^[ ]*\(.*\) has left the following comment at \(.*\)[ \t]*\(http://www.google-melange.com/gci/task/view/google/gci2012/[0-9]*\):[ \t]*\(.*\)[ \t]*Greetings, The Google Open Source Programs Team.*$" body)
     (when (and start (= (length body) end))
       (post-message "#brlcad"
 		    (format nil "~a ~a~%"
