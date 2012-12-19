@@ -214,5 +214,3 @@
   (stop-bot)
   (stop-pump)
   (save-state))
-
-(unless *state* (setf *state* (load-state)))
