@@ -161,12 +161,12 @@
       (t '()))))
 
 (defun process-brlcad-gci-mail-dir (&key
-				      (maildir (merge-pathnames "unhandled-mail/new/" +db-dir+))
-				      (processed-maildir (merge-pathnames "unhandled-mail/cur/" +db-dir+))
+				      (maildir (merge-pathnames "C:/cia-data/new/" +db-dir+))
+				      (processed-maildir (merge-pathnames "C:/cia-data/cur/" +db-dir+))
 				      (hooks '()))
   (process-mail-dir-abstract #'process-brlcad-gci-email maildir processed-maildir hooks))
 (defun test-gci ()
-  (let ((l (split-mail-to-head-and-body #P"/home/erik/db/cia/unhandled-mail/new/1354120503.92902_3.crit.brlcad.org")))
+  (let ((l (split-mail-to-head-and-body #P"C:/cia-data/cur/1355786691.59767_2.crit.brlcad.org")))
     (process-brlcad-gci-email (car l) (cdr l) '())))
 (defun pump () (process-mail-dir) (process-xml-mail-dir) (save-state) (process-brlcad-gci-mail-dir))
 (defvar *pump* '())
