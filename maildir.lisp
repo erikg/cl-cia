@@ -139,7 +139,7 @@
 (defun match-fields (fields pairs)
   ""
   (not (position '() (mapcar (lambda (x) (string= (mail-element (car x) fields) (cadr x))) pairs))))
-(defmacro blip (index) `(string-trim " " (subseq body (aref r1 ,index) (aref r2 ,index))))
+
 (defun do-gci-email (header-fields body hooks)
   (declare (ignore hooks header-fields))
   (setf body (nthcdr 9 body))
@@ -152,6 +152,7 @@
        (comment (car (cl-ppcre:all-matches-as-strings (concatenate 'string "(?<=" title "  ).*?(?=   Greet)") body)))
        (message (concatenate 'string (ascii-ize "GCI" 3) ":" name " * " id " " task ": " title " - " comment)))
     (post-message "#notify" (truncate-for-irc message 200))))
+
 (defun process-brlcad-gci-email (header body hooks)
   (let ((header-fields (fieldinate header)))
     (cond
