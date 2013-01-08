@@ -151,7 +151,7 @@
        (title (car (cl-ppcre:all-matches-as-strings (concatenate 'string "(?<=" id ":   ).*?(?=  )") body)))
        (comment (car (cl-ppcre:all-matches-as-strings (concatenate 'string "(?<=" title "  ).*?(?=   Greet)") body)))
        (message (concatenate 'string (ascii-ize "GCI" 3) ":" name " * " id " " task ": " title " - " comment)))
-    (post-message "#notify" (truncate-for-irc message 200))))
+    (post-message "#brlcad" (truncate-for-irc message 200))))
 
 (defun process-brlcad-gci-email (header body hooks)
   (let ((header-fields (fieldinate header)))
