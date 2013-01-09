@@ -140,6 +140,14 @@
   ""
   (not (position '() (mapcar (lambda (x) (string= (mail-element (car x) fields) (cadr x))) pairs))))
 
+(defun escape-for-regex (str)
+  (coerce
+   (alexandria:flatten
+    (loop for c being the elements of str collect
+	 (if (find c '(#\[ #\] #\? #\( #\) #\. #\\))
+	     (cons #\\ c) c)))
+   'string))
+
 (defun do-gci-email (header-fields body hooks)
   (declare (ignore hooks header-fields))
   (setf body (nthcdr 9 body))
@@ -149,7 +157,7 @@
        (name (car (cl-ppcre:all-matches-as-strings ".*(?= has left)" body)))
        (task (car (cl-ppcre:all-matches-as-strings "(?<=comment at ).*(?= http://)" body)))
        (title (car (cl-ppcre:all-matches-as-strings (concatenate 'string "(?<=" id ":   ).*?(?=  )") body)))
-       (comment (car (cl-ppcre:all-matches-as-strings (concatenate 'string "(?<=" title "  ).*?(?=   Greet)") body)))
+       (comment (car (cl-ppcre:all-matches-as-strings (concatenate 'string "(?<=" (escape-for-regex title) "  ).*?(?=   Greet)") body)))
        (message (concatenate 'string (ascii-ize "GCI" 3) ":" name " * " id " " task ": " title " - " comment)))
     (post-message "#brlcad" (truncate-for-irc message 200))))
 
