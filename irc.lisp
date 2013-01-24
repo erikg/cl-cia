@@ -128,7 +128,7 @@
 		    (body ,(string-trim " " (subseq cmdstr (length cmd))))
 		    (created ,(local-time:now)))
 		  (todo *state*))
-	    (respond msg "OK")))))
+	    (respond msg "OK, added to https://elfga.com/notify/todo")))))
 
 (defun msg-hook (msg)
   (when (> (length (cadr (irc::arguments msg))) 9)
