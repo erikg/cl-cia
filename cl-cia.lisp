@@ -68,7 +68,8 @@
   (format stream "<~a ~a>" (type-of o) (aliases o)))
 
 (defclass project ()
-  ((name :accessor name :initarg :name)
+  ((oid :accessor oid :initform '())
+   (name :accessor name :initarg :name)
    (created :accessor created :initform (local-time:now))
    (users :accessor users :initarg :users :initform '())
    (channels :accessor channels :initarg :channels :initform '())
@@ -112,7 +113,6 @@
   ((projects :accessor projects :initarg :projects  :initform '())
    (notices :accessor notices :initarg :notices :initform '())
    (users :accessor users :initarg :users :initform '())
-   (todo :accessor todo :initarg :todo :initform '())
    (dirty :accessor dirty :initarg :dirty :initform '())))
 (defvar *state* '())
 (defun add-project (project)
@@ -133,7 +133,8 @@
 (defun all-channels (&optional (state *state*))
   (remove-duplicates (alexandria:flatten (cons '("#notify" "##notify") (mapcar #'channels (projects state)))) :test #'string-equal))
 (defclass commit ()
-  ((timestamp :accessor timestamp :initform (local-time:now))
+  ((oid :accessor oid :initform '())
+   (timestamp :accessor timestamp :initform (local-time:now))
    (date :accessor date :initarg :date :initform (local-time:now))
    (user :accessor user :initarg :user)
    (revision :accessor revision :initarg :revision)
@@ -167,9 +168,11 @@
     (setf (commits project) (remove commit (commits project) :test test))))
 
 (defvar *message-hooks* '())
+(defvar *global-message-hooks* '())
 (defun message-seen (project message)
   (when (and project message)
     (find message (commits project) :test #'equals)))
+
 (defun add-messages (messages project)
   (when (and project messages)
     (not
@@ -181,6 +184,7 @@
 	   (setf (message message) (format nil "~{~a~}" (message message))))
 	 (unless (message-seen project message)
 	   (dolist (hook (hooks project)) (funcall hook project message))
+	   (dolist (hook *global-message-hooks*) (funcall hook project message))
 	   (setf (dirty *state*) t)
 	   (push message (commits project))
 	   t))
