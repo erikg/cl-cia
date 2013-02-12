@@ -10,7 +10,7 @@
 (defvar *notice-wrangler-running* '())
 (defvar *notice-lock* (bordeaux-threads:make-lock "ircbot-notice-lock"))
 (defparameter +always-channels+ '("#notify"))
-(defvar *add-todo-hook* (lambda (x) (push x (todo *state*))))
+(defvar *add-todo-hook* (lambda (x) x))
 
 (defun find-connection-by-name (name)
   (declare (ignore name))
