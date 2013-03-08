@@ -106,18 +106,19 @@
 	    (dolist (h hooks) (unless (funcall h commit project) (return '())))
 	    (values commit project)))))))
 
-(defun process-mail-dir-abstract (func maildir processed-maildir hooks)
+(defun process-mail-dir-abstract (func maildir processed-maildir hooks &key (verbose nil))
   (bordeaux-threads:with-lock-held (*biglock*)
     (dolist (file (cl-fad:list-directory maildir))
+      (when verbose (format t "processing ~s~%" file))
       (let ((l (split-mail-to-head-and-body file)))
 	(when (funcall func (car l) (cdr l) hooks)
 	  (rename-file file (merge-pathnames processed-maildir (file-namestring file))))))))
 
-(defun process-mail-dir (&key (maildir +db-unprocessed-mail-dir+) (processed-maildir +db-processed-mail-dir+) (hooks '()))
+(defun process-mail-dir (&key (maildir +db-unprocessed-mail-dir+) (processed-maildir +db-processed-mail-dir+) (hooks '()) (verbose nil))
   "Parse all messages in a mail dir, adding parsed commit messages to the list and applying the hooks"
-  (process-mail-dir-abstract #'load-commit-from-mail-message maildir processed-maildir (if hooks hooks (list #'add-message))))
+  (process-mail-dir-abstract #'load-commit-from-mail-message maildir processed-maildir (if hooks hooks (list #'add-message)) :verbose verbose))
 
-(defun process-xml-mail-dir (&key (maildir +db-unprocessed-xmlmail-dir+) (processed-maildir +db-processed-xmlmail-dir+) (hooks '()))
+(defun process-xml-mail-dir (&key (maildir +db-unprocessed-xmlmail-dir+) (processed-maildir +db-processed-xmlmail-dir+) (hooks '()) (verbose nil))
   "Parse all messages in a mail dir, adding parsed commit messages to the list and applying the hooks"
   (process-mail-dir-abstract
    (lambda (header body hooks)
@@ -135,7 +136,7 @@
 		 (unless res (setf retval '()))
 		 res))))
        retval))
-   maildir processed-maildir hooks))
+   maildir processed-maildir hooks :verbose verbose))
 
 (defun match-fields (fields pairs)
   ""
@@ -172,14 +173,19 @@
       (t '()))))
 
 (defun process-brlcad-gci-mail-dir (&key
+				      (verbose nil)
 				      (maildir (merge-pathnames "unhandled-mail/new/" +db-dir+))
 				      (processed-maildir (merge-pathnames "unhandled-mail/cur/" +db-dir+))
 				      (hooks '()))
-  (process-mail-dir-abstract #'process-brlcad-gci-email maildir processed-maildir hooks))
+  (process-mail-dir-abstract #'process-brlcad-gci-email maildir processed-maildir hooks :verbose verbose))
 (defun test-gci ()
   (let ((l (split-mail-to-head-and-body #P"/home/erik/db/cia/unhandled-mail/new/1354120503.92902_3.crit.brlcad.org")))
     (process-brlcad-gci-email (car l) (cdr l) '())))
-(defun pump () (process-mail-dir) (process-xml-mail-dir) (save-state) (process-brlcad-gci-mail-dir))
+(defun pump (&key (verbose nil))
+  (process-mail-dir :verbose verbose)
+  (process-xml-mail-dir :verbose verbose)
+  (save-state)
+  (process-brlcad-gci-mail-dir :verbose verbose))
 (defvar *pump* '())
 (defvar *pump-running* '())
 (defun start-pump ()
