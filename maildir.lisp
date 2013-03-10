@@ -114,7 +114,7 @@
        (let ((l (split-mail-to-head-and-body file)))
 	 (when (funcall func (car l) (cdr l) hooks)
 	   (rename-file file (merge-pathnames processed-maildir (file-namestring file)))))
-	(SB-INT:STREAM-DECODING-ERROR (e) (format t "Went ~s wonky on ~s~%" e file) '()))))))
+	(sb-int:stream-decoding-error (e) (format t "Went ~s wonky on ~s~%" e file) '())))))
 
 (defun process-mail-dir (&key (maildir +db-unprocessed-mail-dir+) (processed-maildir +db-processed-mail-dir+) (hooks '()) (verbose nil))
   "Parse all messages in a mail dir, adding parsed commit messages to the list and applying the hooks"
