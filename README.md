@@ -1,4 +1,5 @@
 # cl-cia
+This is the engine for [Notify](http://elfga.com/notify), in case you want to help out or make your own.
 
 ## Installing
 cl-cia is written for [SBCL](http://www.sbcl.org) and uses ASDF to install dependancies, all of which are available in [quicklisp](http://www.quicklisp.org).
