@@ -81,10 +81,13 @@
     (bordeaux-threads:with-lock-held (*notice-lock*)
       (when (notices *state*)
 	(let ((n (pop (notices *state*))))
-;	  (handler-case
+	  (handler-case
 	      (cl-irc:privmsg (find-connection-by-name (car n)) (cadr n) (caddr n))
-;	    (t '()))
-)))))
+	    (SB-INT:SIMPLE-STREAM-ERROR (e)
+	      (push n (notices *state*))
+	      (format t "notice-wrangler error: ~s~%" e)
+	      (sleep 60))))))))
+
 
 (defun start-notice-wrangler ()
   (bordeaux-threads:with-lock-held (*notice-lock*)
@@ -160,7 +163,7 @@
       (respond msg (get-excuse))))
   '())
 
-(defun bot (&key (nick +bot-nick+) (ident +bot-ident+) (server +bot-server+) (channels +bot-channels+) (realname +bot-realname+) (nickserv-passwd +bot-nickserv-passwd+))
+(defun bot-make-connection (nick ident server channels realname nickserv-passwd)
   (setf *connection* (cl-irc:connect :username ident :realname realname :server server :nickname nick))
   (cl-irc:add-hook (find-connection-by-name "freenode") 'irc::irc-privmsg-message 'msg-hook)
   (cl-irc:add-hook (find-connection-by-name "freenode") 'irc::irc-notice-message 'notice-hook)
@@ -170,6 +173,14 @@
   (dolist (c channels)
     (cl-irc:join (find-connection-by-name "freenode") c))
   (setf *bot-thread* (bordeaux-threads:make-thread (lambda () (cl-irc:read-message-loop (find-connection-by-name "freenode"))) :name "cl-cia ircbot")))
+
+(defun bot (&key (nick +bot-nick+) (ident +bot-ident+) (server +bot-server+) (channels +bot-channels+) (realname +bot-realname+) (nickserv-passwd +bot-nickserv-passwd+))
+  (bordeaux-threads:make-thread (lambda ()
+				  (loop
+				     (unless (and *bot-thread* (sb-thread:thread-alive-p *bot-thread*))
+				       (bot-make-connection nick ident server channels realname nickserv-passwd))
+				     (sleep 10)))
+				:name "cl-cia ircbot-connect-overmind"))
 
 (defun stop-bot ()
   (cl-irc:quit (find-connection-by-name "freenode") "EVACUATE! EVACUATE!")
