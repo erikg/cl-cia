@@ -173,6 +173,7 @@
   (when (and project message)
     (find message (commits project) :test #'equals)))
 
+(defvar *exec-log* '())
 (defun add-messages (messages project)
   (when (and project messages)
     (not
@@ -183,8 +184,14 @@
 	 (when (listp (message message))
 	   (setf (message message) (format nil "~{~a~}" (message message))))
 	 (unless (message-seen project message)
-	   (dolist (hook (hooks project)) (funcall hook project message))
-	   (dolist (hook *global-message-hooks*) (funcall hook project message))
+	   (flet ((try-hook (hook)
+		    (push (list (local-time:now) project message
+				(if (stringp hook)
+				    (inferior-shell:run/ss hook))
+				(funcall hook project message))
+			  *exec-log*)))
+	     (dolist (hook (hooks project)) (try-hook hook))
+	     (dolist (hook *global-message-hooks*) (try-hook hook)))
 	   (setf (dirty *state*) t)
 	   (push message (commits project))
 	   t))

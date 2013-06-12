@@ -13,6 +13,7 @@
 		 :cl-ppcre
 		 :s-xml
 		 :cl-store
+		 :inferior-shell
 		 )
     :components ((:file "package")
 		 (:file "cl-cia")
