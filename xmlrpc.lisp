@@ -7,34 +7,38 @@
 (defun gettag (xml tag) (let ((tags (gettags xml tag))) (when tags (car tags))))
 
 (defun parsexml (str)
-  (alexandria:when-let ((p (s-xml:parse-xml-string str)))
-    (when (eq (car p) :|message|)
-      (let* ((source (gettags p :|source|))
-	     (proj (gettag source :|project|))
-	     (branch (gettag source :|branch|))
-	     (timestamp (parse-integer (gettag p :|timestamp|)))
-	     (body (gettags p :|body|)))
-	(mapcar (lambda (c)
-		  (let ((author (gettag c :|author|))
-			(rev (gettag c :|revision|))
-			(log (gettag c :|log|))
-			(url (gettag c :|url|))
-			(files (gettags c :|files|)))
-		    (when (and url log
-			       (> (length log) (+ (length url) 3))
-			       (string= (concatenate 'string " - " url) (subseq log (- (length log) (length url) 3))))
-		      (setf log (subseq log 0 (- (length log) (length url) 3))))
-		    (list
-		     proj
-		     branch
-		     (make-instance 'commit
-				    :user author
-				    :revision rev
-				    :date (local-time:unix-to-timestamp timestamp)
-				    :files (mapcar (lambda (file) (string-trim " \t" (cadr file))) files)
-				    :url url
-				    :message log))))
-		body)))))
+  (handler-case
+      (alexandria:when-let ((p (s-xml:parse-xml-string str)))
+	(when (eq (car p) :|message|)
+	  (let* ((source (gettags p :|source|))
+		 (proj (gettag source :|project|))
+		 (branch (gettag source :|branch|))
+		 (timestamp (parse-integer (gettag p :|timestamp|)))
+		 (body (gettags p :|body|)))
+	    (mapcar (lambda (c)
+		      (let ((author (gettag c :|author|))
+			    (rev (gettag c :|revision|))
+			    (log (gettag c :|log|))
+			    (url (gettag c :|url|))
+			    (files (gettags c :|files|)))
+			(when (and url log
+				   (> (length log) (+ (length url) 3))
+				   (string= (concatenate 'string " - " url) (subseq log (- (length log) (length url) 3))))
+			  (setf log (subseq log 0 (- (length log) (length url) 3))))
+			(list
+			 proj
+			 branch
+			 (make-instance 'commit
+					:user author
+					:revision rev
+					:date (local-time:unix-to-timestamp timestamp)
+					:files (mapcar (lambda (file) (string-trim " \t" (cadr file))) files)
+					:url url
+					:message log))))
+		    body))))
+    (S-XML:XML-PARSER-ERROR (c) (format t "Whu? ~%" ) (setf c nil))
+    (SB-INT:CLOSED-STREAM-ERROR (c) (format t "closed stream ~a~%" c))))
+
 
 (defun xmlrpc (str)
   (when str
