@@ -172,7 +172,12 @@
     (cl-irc:privmsg (find-connection-by-name "freenode") "nickserv" (format nil "IDENTIFY ~A" nickserv-passwd)))
   (dolist (c channels)
     (cl-irc:join (find-connection-by-name "freenode") c))
-  (setf *bot-thread* (bordeaux-threads:make-thread (lambda () (cl-irc:read-message-loop (find-connection-by-name "freenode"))) :name "cl-cia ircbot")))
+  (setf *bot-thread* (bordeaux-threads:make-thread
+		      (lambda ()
+			(handler-case
+			    (cl-irc:read-message-loop (find-connection-by-name "freenode"))
+			  (SB-INT:SIMPLE-STREAM-ERROR (e) (format t "Restarting bot because ~s~%" e))))
+		      :name "cl-cia ircbot")))
 
 (defun bot (&key (nick +bot-nick+) (ident +bot-ident+) (server +bot-server+) (channels +bot-channels+) (realname +bot-realname+) (nickserv-passwd +bot-nickserv-passwd+))
   (bordeaux-threads:make-thread (lambda ()
