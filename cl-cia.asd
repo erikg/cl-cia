@@ -14,10 +14,12 @@
 		 :s-xml
 		 :cl-store
 		 :inferior-shell
+		 :cl-json
 		 )
     :components ((:file "package")
 		 (:file "cl-cia")
 		 (:file "irc")
+		 (:file "jsonrpc")
 		 (:file "xmlrpc")
 		 (:file "maildir")))
 

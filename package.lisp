@@ -2,5 +2,5 @@
 
 (defpackage #:cl-cia
   (:use #:cl)
-  (:export :start :stop :find-project :find-commit :xmlrpc))
+  (:export :start :stop :find-project :find-commit :xmlrpc :jsonrpc))
 

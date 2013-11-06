@@ -188,7 +188,7 @@
 				:name "cl-cia ircbot-connect-overmind"))
 
 (defun stop-bot ()
-  (cl-irc:quit (find-connection-by-name "freenode") "EVACUATE! EVACUATE!")
-;  (bordeaux-threads:join-thread *bot-thread*)
-  (setf *bot-thread* '())
-)
+  (cl-irc:quit (find-connection-by-name "freenode") "brb")
+  (when (sb-thread:thread-alive-p *bot-thread*)
+    (bordeaux-threads:join-thread *bot-thread*))
+  (setf *bot-thread* '()))
