@@ -157,7 +157,7 @@
   (setf body (nthcdr 9 body))
   (setf body (format nil "~{~a~^ ~}" (mapcar (lambda (x) (string-trim " " x)) (subseq body 0 (position-if (lambda (x) (when (> (length x) 2) (string= (subseq x 0 2) "--"))) body)))))
   (let*	
-      ((id (car (cl-ppcre:all-matches-as-strings "(?<=gci201/3)[0-9]{7}(?=:)" body)))
+      ((id (car (cl-ppcre:all-matches-as-strings "(?<=gci2013/)[0-9]{7}(?=:)" body)))
        (name (car (cl-ppcre:all-matches-as-strings ".*(?= has left)" body)))
        (task (car (cl-ppcre:all-matches-as-strings "(?<=comment at ).*(?= http://)" body)))
        (title (car (cl-ppcre:all-matches-as-strings (concatenate 'string "(?<=" id ":   ).*?(?=  )") body)))
