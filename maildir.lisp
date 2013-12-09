@@ -157,13 +157,13 @@
   (setf body (nthcdr 9 body))
   (setf body (format nil "~{~a~^ ~}" (mapcar (lambda (x) (string-trim " " x)) (subseq body 0 (position-if (lambda (x) (when (> (length x) 2) (string= (subseq x 0 2) "--"))) body)))))
   (let*	
-      ((id (car (cl-ppcre:all-matches-as-strings "(?<=gci2012/)[0-9]{7}(?=:)" body)))
+      ((id (car (cl-ppcre:all-matches-as-strings "(?<=gci2013/)[0-9]{7}(?=:)" body)))
        (name (car (cl-ppcre:all-matches-as-strings ".*(?= has left)" body)))
        (task (car (cl-ppcre:all-matches-as-strings "(?<=comment at ).*(?= http://)" body)))
        (title (car (cl-ppcre:all-matches-as-strings (concatenate 'string "(?<=" id ":   ).*?(?=  )") body)))
        (comment (car (cl-ppcre:all-matches-as-strings (concatenate 'string "(?<=" (escape-for-regex title) "  ).*?(?=   Greet)") body)))
        (message (concatenate 'string (ascii-ize "GCI" 3) ":" name " * " id " " task ": " title " - " comment)))
-    (post-message "#brlcad" (truncate-for-irc message 200))))
+    (post-message "#brlcad" (truncate-for-irc message 225))))
 
 (defun process-brlcad-gci-email (header body hooks)
   (let ((header-fields (fieldinate header)))
