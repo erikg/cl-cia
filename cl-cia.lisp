@@ -75,6 +75,7 @@
    (channels :accessor channels :initarg :channels :initform '())
    (list-id-regex :accessor list-id-regex :initarg :list-id-regex :initform '())
    (commits :accessor commits :initform '() :initarg :commits)
+   (key :accessor key :initform '() :initarg :key)
    (hooks :accessor hooks :initform '() :initarg :hooks)))
 (defmethod print-object ((p project) stream)
   (format stream "<Project ~a ~a (~d commits)>" (name p) (channels p) (length (commits p))))
