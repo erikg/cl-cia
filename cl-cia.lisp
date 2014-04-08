@@ -188,7 +188,8 @@
 	   (flet ((try-hook (hook)
 		    (push (list (local-time:now) project message
 				(if (stringp hook)
-				    (inferior-shell:run/ss hook)
+				    '()
+;				    (inferior-shell:run/ss hook)
 				    (funcall hook project message)))
 			  *exec-log*)))
 	     (dolist (hook (hooks project)) (try-hook hook))

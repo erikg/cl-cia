@@ -13,7 +13,7 @@
 		 :cl-ppcre
 		 :s-xml
 		 :cl-store
-		 :inferior-shell
+;		 :inferior-shell
 		 :cl-json
 		 )
     :components ((:file "package")
