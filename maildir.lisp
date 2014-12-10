@@ -162,7 +162,7 @@
        (task (car (cl-ppcre:all-matches-as-strings "(?<=comment at ).*(?= http://)" body)))
        (title (car (cl-ppcre:all-matches-as-strings (concatenate 'string "(?<=" id ":   ).*?(?=  )") body)))
        (comment (car (cl-ppcre:all-matches-as-strings (concatenate 'string "(?<=" (escape-for-regex title) "  ).*?(?=   Greet)") body)))
-       (message (concatenate 'string (ascii-ize "GCI" 3) ":" name " * " id " " task ": " title " - " comment)))
+       (message (concatenate 'string (ascii-ize (concatenate 'string "GCI:" name " * " id) 2) " " task ": " title " - " comment)))
     (post-message "#brlcad" (truncate-for-irc message 200))))
 
 (defun process-brlcad-gci-email (header body hooks)
