@@ -148,7 +148,7 @@
   (coerce
    (alexandria:flatten
     (loop for c being the elements of str collect
-	 (if (find c '(#\[ #\] #\? #\( #\) #\. #\\))
+	 (if (find c '(#\[ #\] #\? #\( #\) #\. #\\ #\*))
 	     (cons #\\ c) c)))
    'string))
 
