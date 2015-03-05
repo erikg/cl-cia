@@ -129,6 +129,7 @@
       (ask (respond msg "Questions in the channel should be specific, informative, complete, concise, and on-topic.  Don't ask if you can ask a question first.  Don't ask if a person is there; just ask what you intended to ask them.  Better questions more frequently yield better answers.  We are all here voluntarily or against our will."))
       (info (respond msg "Just your friendly neighborhood commit notification bot, check out https://elfga.com/notify/ for more info"))
       (version (respond msg "Notify beta, official site at https://elfga.com/notify and source code at http://github.com/erikg/cl-cia/"))
+      (pastebin (respond msg "A \"pastebin\" is a web-based service where you should paste anything over 3 lines so you don't flood the channel. Here are links to a few: http://www.pastebin.com, http://pastebin.ca, http://channels.debian.net/paste, http://paste.lisp.org. http://gist.github.com allows file attachments for large log files."))
       (todo (let ((todo `((who ,(irc::source msg))
 			  (whence ,(car (irc::arguments msg)))
 			  (body ,(string-trim " " (subseq cmdstr (length cmd))))
