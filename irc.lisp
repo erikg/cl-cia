@@ -52,9 +52,9 @@
 	(loop for i from len downto 0
 	   until (eq (char m i) #\Space)
 	   finally (return (cons (subseq m 0 i) (split-for-irc (subseq m (+ i 1)))))))))
-(defun split-to-3-for-irc (msg &optional (len +irc-line-length+))
+(defun split-to-3-for-irc (msg &key (len +irc-line-length+) (lines 3))
   (let ((bits (split-for-irc msg len)))
-    (if (<= (length bits) 3)
+    (if (<= (length bits) lines)
 	bits
 	(list (car bits) (cadr bits) (concatenate 'string (caddr bits) "...")))))
 
@@ -72,7 +72,7 @@
 
 (defun report-commit (project message)
   (when (and project message)
-    (dolist (b (split-to-3-for-irc (format-commit project message)))
+    (dolist (b (split-to-3-for-irc (format-commit project message) :lines 1))
       (report-msg project b))))
 
 (defun notice-wrangler ()
