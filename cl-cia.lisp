@@ -135,7 +135,7 @@
   (remove-duplicates (alexandria:flatten (cons '("#notify" "##notify") (mapcar #'channels (projects state)))) :test #'string-equal))
 (defclass commit ()
   ((oid :accessor oid :initform '())
-   (timestamp :accessor timestamp :initform (local-time:now))
+   (timestamp :accessor timestamp :initform (local-time:now) :initarg :timestamp)
    (date :accessor date :initarg :date :initform (local-time:now))
    (user :accessor user :initarg :user)
    (revision :accessor revision :initarg :revision)
