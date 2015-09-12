@@ -12,6 +12,7 @@
 (defvar *notice-lock* (bordeaux-threads:make-lock "ircbot-notice-lock"))
 (defparameter +always-channels+ '("#notify"))
 (defvar *add-todo-hook* (lambda (x) x))
+(defparameter +bot-flood-wait+ 1)
 
 (defun find-connection-by-name (name)
   (declare (ignore name))
@@ -77,7 +78,7 @@
       (report-msg project b))))
 
 (defun notice-wrangler ()
-  (sleep 1)
+  (sleep +bot-flood-wait+)
   (when (notices *state*)
     (bordeaux-threads:with-lock-held (*notice-lock*)
       (when (notices *state*)
@@ -88,7 +89,6 @@
 	      (push n (notices *state*))
 	      (format t "notice-wrangler error: ~s~%" e)
 	      (sleep 60))))))))
-
 
 (defun start-notice-wrangler ()
   (bordeaux-threads:with-lock-held (*notice-lock*)
