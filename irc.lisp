@@ -184,7 +184,7 @@
 		      :name "cl-cia ircbot")))
 
 (defun bot (&key (nick +bot-nick+) (ident +bot-ident+) (server +bot-server+) (channels +bot-channels+) (realname +bot-realname+) (nickserv-passwd +bot-nickserv-passwd+))
-  (unless *cl-cia-irc-overmind-thread*
+  (unless (and *cl-cia-irc-overmind-thread* (sb-thread:thread-alive-p *cl-cia-irc-overmind-thread*))
     (setf *cl-cia-irc-overmind-thread*
 	  (bordeaux-threads:make-thread (lambda ()
 					  (loop
