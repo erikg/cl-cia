@@ -115,6 +115,12 @@
    (notices :accessor notices :initarg :notices :initform '())
    (users :accessor users :initarg :users :initform '())
    (dirty :accessor dirty :initarg :dirty :initform '())))
+(defmethod print-object ((state state) stream)
+  (format stream "<STATE: notices:~d projects:~d users:~d dirty:~a>"
+	  (length (notices state))
+	  (length (projects state))
+	  (users state)
+	  (dirty state)))
 (defvar *state* '())
 (defun add-project (project)
   (push project (projects *state*)))
