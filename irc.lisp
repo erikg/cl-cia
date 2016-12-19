@@ -53,7 +53,10 @@
 	(list m)
 	(loop for i from len downto 0
 	   until (eq (char m i) #\Space)
-	   finally (return (cons (subseq m 0 i) (split-for-irc (subseq m (+ i 1)))))))))
+	   finally (return
+		     (if (<= i 0)
+			 '()
+			 (cons (subseq m 0 i) (split-for-irc (subseq m (+ i 1))))))))))
 (defun split-to-3-for-irc (msg &key (len +irc-line-length+) (lines 3))
   (let ((bits (split-for-irc msg len)))
     (if (<= (length bits) lines)
@@ -129,6 +132,9 @@
       (all (respond msg (format nil "~{~{~a:~a~}~^, ~}" (count-commits-by-user-since (commits proj) (local-time:universal-to-timestamp 0)))))
       (ask (respond msg "Questions in the channel should be specific, informative, complete, concise, and on-topic.  Don't ask if you can ask a question first.  Don't ask if a person is there; just ask what you intended to ask them.  Better questions more frequently yield better answers.  We are all here voluntarily or against our will."))
       (info (respond msg "Just your friendly neighborhood commit notification bot, check out https://elfga.com/notify/ for more info"))
+      (sq (respond msg "Learn how to ask a smart question: http://www.catb.org/esr/faqs/smart-questions.html"))
+      (smart (respond msg "Learn how to ask a smart question: http://www.catb.org/esr/faqs/smart-questions.html"))
+      (smartquestion (respond msg "Learn how to ask a smart question: http://www.catb.org/esr/faqs/smart-questions.html"))
       (version (respond msg "Notify beta, official site at https://elfga.com/notify and source code at http://github.com/erikg/cl-cia/"))
       (pastebin (respond msg "A \"pastebin\" is a web-based service where you should paste anything over 3 lines so you don't flood the channel. Here are links to a few: http://www.pastebin.com, http://pastebin.ca, http://channels.debian.net/paste, http://paste.lisp.org. http://gist.github.com allows file attachments for large log files."))
       (todo (let ((todo `((who ,(irc::source msg))
