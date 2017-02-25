@@ -4,6 +4,7 @@
 
 (defvar +irc-line-length+ 420)
 
+(defvar *should-be-running* '())
 (defvar *bot-thread* '())
 (defvar *cl-cia-irc-overmind-thread* '())
 (defvar *connection* '())
@@ -190,17 +191,21 @@
 		      :name "cl-cia ircbot")))
 
 (defun bot (&key (nick +bot-nick+) (ident +bot-ident+) (server +bot-server+) (channels +bot-channels+) (realname +bot-realname+) (nickserv-passwd +bot-nickserv-passwd+))
+  (setf *should-be-running* t)
   (unless (and *cl-cia-irc-overmind-thread* (sb-thread:thread-alive-p *cl-cia-irc-overmind-thread*))
     (setf *cl-cia-irc-overmind-thread*
 	  (bordeaux-threads:make-thread (lambda ()
-					  (loop
-					     (unless (and *bot-thread* (sb-thread:thread-alive-p *bot-thread*))
-					       (bot-make-connection nick ident server channels realname nickserv-passwd))
-					     (sleep 10)))
+					  (loop while *should-be-running*
+					       do
+					       (unless (and *bot-thread* (sb-thread:thread-alive-p *bot-thread*))
+						 (bot-make-connection nick ident server channels realname nickserv-passwd))
+					       (sleep 10)))
 					:name "cl-cia ircbot-connect-overmind"))))
 
 (defun stop-bot ()
+  (setf *should-be-running* '())
   (cl-irc:quit (find-connection-by-name "freenode") "brb")
   (when (sb-thread:thread-alive-p *bot-thread*)
     (bordeaux-threads:join-thread *bot-thread*))
+  (bordeaux-threads:join-thread *cl-cia-irc-overmind-thread*)
   (setf *bot-thread* '()))
