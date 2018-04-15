@@ -1,5 +1,3 @@
-
-
 (in-package :cl-cia)
 
 (defvar +irc-line-length+ 420)
@@ -13,7 +11,7 @@
 (defvar *notice-lock* (bordeaux-threads:make-lock "ircbot-notice-lock"))
 (defparameter +always-channels+ '("#notify"))
 (defvar *add-todo-hook* (lambda (x) x))
-(defparameter +bot-flood-wait+ 1)
+(defparameter +bot-flood-wait+ 2)
 
 (defun find-connection-by-name (name)
   (declare (ignore name))
@@ -187,7 +185,8 @@
 		      (lambda ()
 			(handler-case
 			    (cl-irc:read-message-loop (find-connection-by-name "freenode"))
-			  (SB-INT:SIMPLE-STREAM-ERROR (e) (format t "Restarting bot because ~s~%" e))))
+			  (SB-INT:SIMPLE-STREAM-ERROR (e) (format t "Restarting bot because ~s~%" e)))
+			(format t "Exiting bot"))
 		      :name "cl-cia ircbot")))
 
 (defun bot (&key (nick +bot-nick+) (ident +bot-ident+) (server +bot-server+) (channels +bot-channels+) (realname +bot-realname+) (nickserv-passwd +bot-nickserv-passwd+))
@@ -205,6 +204,8 @@
 (defun stop-bot ()
   (setf *should-be-running* '())
   (cl-irc:quit (find-connection-by-name "freenode") "brb")
+  (sleep 2)
+  (bordeaux-threads:destroy-thread *bot-thread*)
   (when (sb-thread:thread-alive-p *bot-thread*)
     (bordeaux-threads:join-thread *bot-thread*))
   (bordeaux-threads:join-thread *cl-cia-irc-overmind-thread*)
